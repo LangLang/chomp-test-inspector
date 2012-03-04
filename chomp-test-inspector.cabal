@@ -7,7 +7,7 @@ license-file: ""
 copyright:
 maintainer:
 build-depends: base -any, blaze-html -any, bytestring -any,
-               hamlet -any, http-types -any, wai -any, warp -any
+               hamlet -any, hinotify -any, http-types -any, wai -any, warp -any
 stability:
 homepage:
 package-url:

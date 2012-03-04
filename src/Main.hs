@@ -8,9 +8,13 @@ import Network.Wai.Handler.Warp (run)
 import Text.Hamlet (shamlet)
 import Text.Blaze.Renderer.Utf8 (renderHtml)
 --import qualified Data.ByteString.Lazy as LB
+import System.INotify (initINotify, killINotify)
 
 main :: IO ()
-main = run 8080 app
+main = do
+  inotify <- initINotify
+  run 8080 app
+  killINotify inotify
 
 app :: Application
 app req = do
