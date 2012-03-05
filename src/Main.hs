@@ -5,16 +5,27 @@ module Main (main) where
 import Network.Wai (Response, Application, responseLBS, requestBody)
 import Network.HTTP.Types (status200, status400)
 import Network.Wai.Handler.Warp (run)
+import Network.WebSockets(WebSockets, TextProtocol, sendTextData)
+import qualified Data.Text as T
+--import qualified Data.ByteString.Lazy as LB
 import Text.Hamlet (shamlet)
 import Text.Blaze.Renderer.Utf8 (renderHtml)
---import qualified Data.ByteString.Lazy as LB
-import System.INotify (initINotify, killINotify)
+import System.INotify (initINotify, killINotify, addWatch, removeWatch, EventVariety(..), Event)
+
 
 main :: IO ()
 main = do
   inotify <- initINotify
+  addWatch inotify [Modify] "tests/test00.source" sourceFileChanged
   run 8080 app
   killINotify inotify
+
+sourceFileChanged :: Event -> IO ()
+sourceFileChanged e = do
+  return ()
+
+webSocketApp :: TextProtocol p => WebSockets p ()
+webSocketApp = sendTextData (T.pack "Test websocket response")
 
 app :: Application
 app req = do
