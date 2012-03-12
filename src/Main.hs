@@ -1,16 +1,23 @@
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 
-import Network.Wai (Response, Application, responseLBS, requestBody)
+import Network.Wai (Response, Application, responseLBS, requestBody, pathInfo)
 import Network.HTTP.Types (status200, status400)
 import Network.Wai.Handler.Warp (run)
+import Network.Wai.Application.Static -- TODO, refine import
 import Network.WebSockets(WebSockets, TextProtocol, sendTextData)
 import qualified Data.Text as T
 --import qualified Data.ByteString.Lazy as LB
-import Text.Hamlet (shamlet)
-import Text.Blaze.Renderer.Utf8 (renderHtml)
 import System.INotify (initINotify, killINotify, addWatch, removeWatch, EventVariety(..), Event)
+import TestInspectorPage
+
+--import Control.Monad
+import Control.Monad.Trans
+
+import System.IO (stdout, hFlush)
+import Data.Text hiding (map)
+import Data.Text.IO (putStrLn, hPutStrLn)
+import Prelude hiding (putStrLn)
 
 
 main :: IO ()
@@ -19,35 +26,49 @@ main = do
   addWatch inotify [Modify] "tests/test00.source" sourceFileChanged
   run 8080 app
   killINotify inotify
+  where
+    app req =
+      let p = pathInfo req :: [Text] in
+      case p of
+        _:_ -> do
+          liftIO $ putStrLn $ intercalate "/" p
+          staticInspectorApp req
+        _          ->
+          inspectorApp req
+
+  --liftIO $ putStrLn $ intercalate "/"
+  --app req
 
 sourceFileChanged :: Event -> IO ()
 sourceFileChanged e = do
   return ()
 
-webSocketApp :: TextProtocol p => WebSockets p ()
-webSocketApp = sendTextData (T.pack "Test websocket response")
+webSocketInspectorApp :: TextProtocol p => WebSockets p ()
+webSocketInspectorApp = sendTextData (T.pack "Test websocket response")
 
-app :: Application
-app req = do
+staticInspectorApp :: Application
+staticInspectorApp = staticApp defaultWebAppSettings
+{-
+staticInspectorApp req = do
+  -- responseFile
+  --liftIO $ sequence_ $ map putStrLn $ pathInfo req
+  case p of
+    "static":_ -> do
+      liftIO $ putStrLn $ intercalate "/" p
+      inspectorApp req
+    _          ->
+      inspectorApp req
+  --liftIO $ putStrLn $ intercalate "/"
+  --app req
+  where
+    p = pathInfo req :: [Text]
+-}
+
+inspectorApp :: Application
+inspectorApp req = do
   --body <- requestBody req
   return $ responseLBS
     status200
     [("Content-Type", "text/html")]
-    $ renderHtml [shamlet|
-        $doctype 5
-        <html>
-          <head>
-            <title>#{pageTitle} &mdash; #{pageSubTitle}
-            <link>
-          <body>
-            <h1 .page-title>#{pageTitle}
-            <p>Reactive tests
-            <textarea>#{test1Src}
-            <textarea placeholder="Result...">
-            <footer>^{copyright}
-      |]
-      where
-        pageTitle = "Chomp (A brave new LangLang compiler)" :: String
-        pageSubTitle = "Test Inspector" :: String
-        test1Src = "" :: String
-        copyright = [shamlet|<p>Copyright (C) Rehno Lindeque.|]
+    $ pageHtml
+
