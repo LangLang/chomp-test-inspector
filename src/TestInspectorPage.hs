@@ -4,7 +4,7 @@
 module TestInspectorPage (pageHtml) where
 
 import Text.Hamlet (shamlet)
-import Text.Blaze.Renderer.Utf8 (renderHtml,)
+import Text.Blaze.Renderer.Utf8 (renderHtml)
 --import Text.Julius (renderJavascript, js)
 import Text.Shakespeare.Text (st)
 import Text.Blaze (preEscapedText)

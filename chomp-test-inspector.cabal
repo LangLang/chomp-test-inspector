@@ -7,9 +7,10 @@ license-file: ""
 copyright:
 maintainer:
 build-depends: base -any, blaze-html -any, bytestring -any,
-               hamlet -any, hinotify -any, http-types -any, mtl -any,
-               shakespeare -any, shakespeare-text -any, text -any, wai -any,
-               wai-app-static -any, warp -any, websockets -any
+               case-insensitive -any, enumerator -any, hamlet -any, hinotify -any,
+               http-types -any, mtl -any, shakespeare -any, shakespeare-text -any,
+               text -any, wai -any, wai-app-static -any, wai-websockets -any,
+               warp -any, websockets -any
 stability:
 homepage:
 package-url:
@@ -45,7 +46,7 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: src
-other-modules: TestInspectorPage
+other-modules: WebsocketApp WebApp TestInspectorPage
 ghc-prof-options:
 ghc-shared-options:
 ghc-options:
