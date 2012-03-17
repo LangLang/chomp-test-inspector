@@ -21,7 +21,7 @@ import FileStore
 main :: IO ()
 main = do
   inotify <- initINotify
-  addWatch inotify [Modify] "tests/test00.source" sourceFileChanged
+  addWatch inotify [Modify] "tests" sourceFileChanged
   fileStore <- newMVar []
   Warp.runSettings (webAppSettings fileStore) webApp
   killINotify inotify
