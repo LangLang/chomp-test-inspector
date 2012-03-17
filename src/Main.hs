@@ -27,4 +27,5 @@ main = do
   where
     sourceFileChanged :: Event -> IO ()
     sourceFileChanged e = do
+      putStrLn "Source file changed"
       return ()

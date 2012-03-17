@@ -16,12 +16,13 @@ pageHtml = renderHtml [shamlet|
         <title>#{pageTitle} &mdash; #{pageSubTitle}
         <link>
         <script src=/socket.io/socket.io.js>
+        <script src=/jquery/jquery.js>
         <script>
-          var socket = io.connect('http://localhost');
+          /*var socket = io.connect('http://localhost');
           socket.on('news', function (data) {
             console.log(data);
             socket.emit('my other event', { my: 'data' });
-          });
+          });*/
         <script>
           ^{js}
       <body>
@@ -40,7 +41,24 @@ pageHtml = renderHtml [shamlet|
 
 --pageJs = renderJavascript $ [js|
 pageJs = [st|
-    function test() {
-      return 0;
-    }
+    createWebSocket = function(path) {
+      var host = window.location.hostname;
+      if(host == '') host = 'localhost';
+      var uri = 'ws://' + host + ':8080' + path;
+
+      var Socket = "MozWebSocket" in window ? MozWebSocket : WebSocket;
+      return new Socket(uri);
+    };
+
+    $(document).ready(function () {
+      var ws = createWebSocket('/');
+
+      ws.onopen = function() {
+        ws.send('Message from client');
+      };
+
+      ws.onmessage = function(event) {
+        console.log(event);
+      };
+    });
   |]
