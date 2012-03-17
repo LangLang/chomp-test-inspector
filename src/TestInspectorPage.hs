@@ -9,6 +9,7 @@ import Text.Blaze.Renderer.Utf8 (renderHtml)
 import Text.Shakespeare.Text (st)
 import Text.Blaze (preEscapedText)
 
+-- Html page
 pageHtml = renderHtml [shamlet|
     $doctype 5
     <html>
@@ -39,6 +40,7 @@ pageHtml = renderHtml [shamlet|
     test1Src = "" :: String
     copyright = "Copyright (C) Rehno Lindeque."
 
+-- Embedded javascript in the html page
 --pageJs = renderJavascript $ [js|
 pageJs = [st|
     createWebSocket = function(path) {
