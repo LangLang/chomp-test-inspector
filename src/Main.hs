@@ -10,34 +10,46 @@ import qualified Network.Wai.Handler.Warp as Warp
 import Network.Wai.Handler.WebSockets (interceptWith)
 import Network.WebSockets(defaultWebSocketsOptions)
 import System.INotify (initINotify, killINotify, addWatch, removeWatch, EventVariety(..), Event(..))
-import Control.Concurrent (MVar, newMVar, modifyMVar_, readMVar)
+--import Control.Concurrent (MVar, newMVar, modifyMVar_, readMVar)
+import Control.Concurrent.STM (TVar, atomically)
+import Data.STM.TList (TList)
+import qualified Data.STM.TList as TList
 import Control.Exception (try)
+import Control.Monad.Trans (liftIO)
 import qualified System.Directory as Dir
 import Data.String.Utils (endswith)
 
 -- Application modules
 import WebApp
 import WebsocketApp
-import FileStore
+import qualified STM.FileStore as STM (FileStore)
+import qualified STM.FileStore as STM.FileStore
+
 
 -- Main application entry point
 main :: IO ()
 main = do
-  inotify <- initINotify
-  addWatch inotify [Modify] watchPath sourceFileChanged
   --TODO: initialFiles <- try $ getDirectoryContents watchPath
   initialFiles <- Dir.getDirectoryContents watchPath
-  fileStore <- newMVar initialFiles
+  fileStore <- atomically $ STM.FileStore.fromPaths initialFiles
+  --fileStore <- newMVar initialFiles
+  inotify <- initINotify
+  addWatch inotify [Modify] watchPath $ sourceFileChanged fileStore
   Warp.runSettings (webAppSettings fileStore) webApp
   killINotify inotify
   where
     watchPath = "tests" :: FilePath
     isDots f = not $ (endswith "/." f) || (endswith "/.." f)
-    sourceFileChanged :: Event -> IO ()
-    sourceFileChanged e = do
+    sourceFileChanged :: STM.FileStore -> Event -> IO ()
+    sourceFileChanged fileStore e = do
       case e of
         Modified False p -> putStrLn $ (fromMaybeFilePath p) `append` " was modified."
-        MovedOut False p c -> putStrLn $ "'" `append` pack p `append` "' was moved out."
+        MovedOut False p c -> do
+          putStrLn $ "'" `append` pack p `append` "' was moved out."
+          --readMVar fileStore
+          do
+            --n <- atomically $ TList.start fileStore
+            return ()
         MovedIn False p c -> putStrLn $ "'" `append` pack p `append` "' was moved in." --TODO: use the cookie to check whether the file was actually renamed
         MovedSelf _ -> putStrLn "The watched path was moved and hence no longer exists."
         Created True p -> putStrLn $ "'" `append` pack p `append` "' was created."
@@ -51,7 +63,7 @@ main = do
         fromMaybeFilePath = maybe "Unknown file" $ \filename -> "'" `append` pack filename `append` "'"
 
 -- Set up the web application with the websocket app and a thread-safe file store
-webAppSettings :: MVar FileStore -> Warp.Settings
+webAppSettings :: STM.FileStore -> Warp.Settings
 webAppSettings fileStore = Warp.defaultSettings
   { Warp.settingsPort = 8080
   , Warp.settingsIntercept = interceptWith defaultWebSocketsOptions $ websocketApp fileStore

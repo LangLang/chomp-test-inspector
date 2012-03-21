@@ -3,16 +3,20 @@ module WebsocketApp (websocketApp) where
 
 -- Standard modules
 import Network.WebSockets as WS
-import Data.Text (pack, Text)
+import Data.Text (pack, intercalate, Text)
 import Control.Monad.Trans (liftIO)
-import Control.Concurrent (MVar, newMVar, modifyMVar_, readMVar)
+--import Control.Concurrent (MVar, newMVar, modifyMVar_, readMVar)
+import Control.Concurrent.STM (atomically)
+import Data.STM.TList (TList)
+import qualified Data.STM.TList as TList
 
 -- Application modules
-import FileStore
+--import FileStore
+import qualified STM.FileStore as STM (FileStore)
 
 -- Websocket application responsible for updating the client browser and receiving updates from the
 -- the client
-websocketApp :: MVar FileStore -> Request -> WebSockets Hybi10 ()
+websocketApp :: STM.FileStore -> Request -> WebSockets Hybi10 ()
 websocketApp fileStore req = do
   WS.acceptRequest req
   -- Obtain a sink to use for sending data in another thread
@@ -22,4 +26,5 @@ websocketApp fileStore req = do
 
   -- Send the initial files to the application
   sendTextData ("TODO: Send files" :: Text)
-
+  files <- liftIO $ atomically $ TList.toList fileStore
+  sendTextData $ intercalate "\n" . map pack $ files
