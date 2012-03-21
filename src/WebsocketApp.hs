@@ -11,8 +11,11 @@ import Data.STM.TList (TList)
 import qualified Data.STM.TList as TList
 
 -- Application modules
---import FileStore
+import FileStore
 import qualified STM.FileStore as STM (FileStore)
+
+data Message = ReloadFiles [FileInfo]
+  deriving Show
 
 -- Websocket application responsible for updating the client browser and receiving updates from the
 -- the client
@@ -27,4 +30,5 @@ websocketApp fileStore req = do
   -- Send the initial files to the application
   sendTextData ("TODO: Send files" :: Text)
   files <- liftIO $ atomically $ TList.toList fileStore
-  sendTextData $ intercalate "\n" . map pack $ files
+  --sendTextData $ intercalate "\n" . map pack $ files
+  sendTextData $ pack $ show $ ReloadFiles files
