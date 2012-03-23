@@ -22,7 +22,7 @@ import qualified STM.FileStore as STM (FileStore)
 import qualified STM.Clients as STM (Clients)
 import qualified STM.Clients as STM.Clients
 
-data Message = Information String | ReloadFiles [FileInfo]
+data Message = Acknowledge | Information String | ReloadFiles [FileInfo]
   deriving Show
 
 -- Websocket application responsible for updating the client browser and receiving updates from the
@@ -53,6 +53,7 @@ listen fileStore = do
     receive = do
       message <- WS.receiveData :: WS.WebSockets Hybi10 Text
       liftIO $ putStrLn ("Message received: '" `append` message `append` "'")
+      sendTextData $ pack $ show Acknowledge
       return ()
     catchDisconnect :: WS.TextProtocol p => STM.Clients p -> SomeException -> WebSockets p ()
     catchDisconnect clients e =
