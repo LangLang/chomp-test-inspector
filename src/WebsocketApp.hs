@@ -2,19 +2,27 @@
 module WebsocketApp (websocketApp) where
 
 -- Standard modules
+import Prelude hiding (putStrLn)
 import Network.WebSockets as WS
-import Data.Text (pack, intercalate, Text)
+import Data.Monoid (mappend)
+import Control.Exception (fromException)
+import Data.Text (pack, intercalate, append, Text)
+import Data.Text.IO (putStrLn)
 import Control.Monad.Trans (liftIO)
+import Control.Exception (SomeException)
 --import Control.Concurrent (MVar, newMVar, modifyMVar_, readMVar)
 import Control.Concurrent.STM (atomically)
 import Data.STM.TList (TList)
+import Data.Monoid
 import qualified Data.STM.TList as TList
 
 -- Application modules
 import FileStore
 import qualified STM.FileStore as STM (FileStore)
+import qualified STM.Clients as STM (Clients)
+import qualified STM.Clients as STM.Clients
 
-data Message = ReloadFiles [FileInfo]
+data Message = Information String | ReloadFiles [FileInfo]
   deriving Show
 
 -- Websocket application responsible for updating the client browser and receiving updates from the
@@ -22,13 +30,34 @@ data Message = ReloadFiles [FileInfo]
 websocketApp :: STM.FileStore -> Request -> WebSockets Hybi10 ()
 websocketApp fileStore req = do
   WS.acceptRequest req
-  -- Obtain a sink to use for sending data in another thread
-  --sink <- WS.getSink
-  --msg <- WS.receiveData
-  --liftIO $ WS.sendSink sink $ WS.textData "Test message"
 
   -- Send the initial files to the application
-  sendTextData ("TODO: Send files" :: Text)
   files <- liftIO $ atomically $ TList.toList fileStore
-  --sendTextData $ intercalate "\n" . map pack $ files
   sendTextData $ pack $ show $ ReloadFiles files
+
+  -- Obtain a sink to use for sending data in another thread
+  sink <- WS.getSink
+  listen fileStore
+
+listen :: STM.FileStore -> WS.WebSockets Hybi10 ()
+listen fileStore = do
+  clients <- liftIO $ TList.emptyIO
+  (flip WS.catchWsError $ catchDisconnect clients) receive
+  return ()
+  {-
+  liftIO $ readMVar state >>= broadcast
+    (user `mappend` ": " `mappend` msg)
+    talk state client -}
+  where
+    receive :: WS.WebSockets Hybi10 ()
+    receive = do
+      message <- WS.receiveData :: WS.WebSockets Hybi10 Text
+      liftIO $ putStrLn ("Message received: '" `append` message `append` "'")
+      return ()
+    catchDisconnect :: WS.TextProtocol p => STM.Clients p -> SomeException -> WebSockets p ()
+    catchDisconnect clients e =
+      case fromException e of
+        Just WS.ConnectionClosed -> liftIO $ do
+          STM.Clients.broadcast clients $ pack $ show $ Information "A client disconnected."
+          return ()
+        _ -> return ()

@@ -7,10 +7,10 @@ license-file: ""
 copyright:
 maintainer:
 build-depends: MissingH -any, base -any, blaze-html -any,
-               bytestring -any, case-insensitive -any, directory -any,
-               enumerator -any, hamlet -any, hinotify -any, http-types -any,
-               mtl -any, shakespeare -any, shakespeare-text -any, stm -any,
-               stm-tlist -any, text -any, wai -any, wai-app-static -any,
+               bytestring -any, case-insensitive -any, containers -any,
+               directory -any, enumerator -any, hamlet -any, hinotify -any,
+               http-types -any, mtl -any, shakespeare -any, shakespeare-text -any,
+               stm -any, stm-tlist -any, text -any, wai -any, wai-app-static -any,
                wai-websockets -any, warp -any, websockets -any
 stability:
 homepage:
