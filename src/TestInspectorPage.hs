@@ -18,6 +18,7 @@ pageHtml = renderHtml [shamlet|
         <link>
         <script src=/socket.io/socket.io.js>
         <script src=/jquery/jquery.js>
+        <script src=/adt/adt.js>
         <script>
           /*var socket = io.connect('http://localhost');
           socket.on('news', function (data) {
@@ -43,6 +44,7 @@ pageHtml = renderHtml [shamlet|
 -- Embedded javascript in the html page
 --pageJs = renderJavascript $ [js|
 pageJs = [st|
+    var Message = adt.constructors('Acknowledge','Notify','ReloadFiles','PatchFile'),
     createWebSocket = function(path) {
       var host = window.location.hostname;
       if(host == '') host = 'localhost';
