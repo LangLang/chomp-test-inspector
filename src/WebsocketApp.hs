@@ -62,6 +62,6 @@ listen fileStore messages = do
     catchDisconnect clients e =
       case fromException e of
         Just WS.ConnectionClosed -> liftIO $ do
-          STM.Clients.broadcast clients $ pack $ show $ Information "A client disconnected."
+          STM.Clients.broadcast clients $ pack $ show $ Notify "A client disconnected."
           return ()
         _ -> return ()
