@@ -25,7 +25,6 @@ import WebsocketApp
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.FileStore as STM.FileStore
 
-
 -- Main application entry point
 main :: IO ()
 main = do
