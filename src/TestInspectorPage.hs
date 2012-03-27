@@ -17,7 +17,7 @@ pageHtml = renderHtml [shamlet|
         <title>#{pageTitle} &mdash; #{pageSubTitle}
         <link>
         <script src=/socket.io/socket.io.js>
-        <script src=/jquery/jquery.js>
+        <script src=/jquery/jquery.min.js>
         <script src=/adt/adt.js>
         <script>
           /*var socket = io.connect('http://localhost');
@@ -44,13 +44,13 @@ pageHtml = renderHtml [shamlet|
 -- Embedded javascript in the html page
 --pageJs = renderJavascript $ [js|
 pageJs = [st|
-    var Message = adt.constructors('Acknowledge','Notify','ReloadFiles','PatchFile'),
+    var Message = adt('Acknowledge','Notify','ReloadFiles','PatchFile'),
     createWebSocket = function(path) {
       var host = window.location.hostname;
       if(host == '') host = 'localhost';
       var uri = 'ws://' + host + ':8080' + path;
 
-      var Socket = "MozWebSocket" in window ? MozWebSocket : WebSocket;
+      var Socket = 'MozWebSocket' in window ? MozWebSocket : WebSocket;
       return new Socket(uri);
     };
 
@@ -58,7 +58,7 @@ pageJs = [st|
       var ws = createWebSocket('/');
 
       ws.onopen = function() {
-        ws.send('Message from client');
+        ws.send("Message from client");
       };
 
       ws.onmessage = function(event) {
