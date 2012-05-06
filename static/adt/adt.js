@@ -61,7 +61,7 @@ var adt = (function() {
         if (str[i] !== '\\')
           result += str[i];
         else {
-          replacement = escapes[str[i + 1]]
+          var replacement = escapes[str[i + 1]];
           result += (replacement == null? str[i + 1] : replacement);
           ++i;
         }          
@@ -320,13 +320,11 @@ var adt = (function() {
       return '';
     },
 
-    // TODO: id's will be escaped...
-
     lexString = function(str) {
       var i, searchIndex = 1;
       // pre-condition: str.length > 1
       while (true) {
-        searchIndex = string.indexOf(str[0], searchIndex);
+        searchIndex = str.indexOf(str[0], searchIndex);
         if (searchIndex === -1)
           throw "No closing quotation mark was found for the string starting with " + str.slice(0, Math.min(5, str.length)) + "...";
         // Check if there's an odd number of escape characters before the quotation mark character
@@ -341,21 +339,25 @@ var adt = (function() {
     },
     lex = function(str) {
       var 
-        nextWhiteSpace;
+        nextWhiteSpace,
+        skip = 1;
       str = eatWhiteSpace(str);
       if (str.length === 0)
         return ['','']; // empty string
       switch (str[0]) {
         case '(':
         case ')':
-        case '"': 
-        case '\'':
         case '[':
         case ']':
         case ',': 
           return { head: str[0], tail: str.slice(1) };
+        case '\"': 
+        case '\'':
+          return lexString(str);
+        case '\\':
+          skip = 2;
       }
-      for (var i = 0; i < str.length; ++i) {
+      for (var i = skip; i < str.length; ++i) {
         switch (str[i]) {
           case '(':
           case ')':
@@ -367,15 +369,20 @@ var adt = (function() {
           case '\r':
           case '\t':
             return { head: str.slice(0, i), tail: str.slice(i) };
-          case '"': 
+          case '\"': 
           case '\'':
-            return lexString(str);
+            throw "Illegal quote character `" + str[i] + "` found in lexeme. Quotes should be escaped using `\\" + str[i] + "`."
+          case '\\':
+            if (i === str.length - 1)
+              throw "Escape character `\\` found at the end of the input string, followed by nothing."
+            ++i; // skip the next character
         }
       }
+      return { head: str, tail: "" };
     },
     parseADTTail = function(input) {
       if (input.length < 1)
-        throw "No data given after empty opening parenthesis `(`.";
+        throw "No data supplied after opening parenthesis `(`.";
       var
         key = unescapeString(input[0]),
         tail = input.slice(1),
@@ -400,10 +407,36 @@ var adt = (function() {
     },
     parseArrayTail = function(input) {
       if (input.length < 2)
-        throw "No closing bracket found for array [...";
+        throw "No data supplied after array opening bracket `[`.";
+      var 
+        tail = input, 
+        commaCount = 0,
+        array = [];
+      while (tail.length > 0)
+        switch (tail[0]) {
+          case ')':
+            throw "Invalid character `" + tail[0] + "` found in the data."
+          case ',':
+            ++commaCount;
+            if (commaCount < array.length)
+              array.push(undefined);
+            // post-condition: array.length === commaCount
+            tail = tail.slice(1);
+            continue;
+          case ']':
+            return { result: array, tail: tail.slice(1) };
+          default:
+            if (commaCount < array.length)
+              throw "Expected `,` separator between array elements."
+            var parseResult = parse(tail);
+            if (parseResult == null)
+              continue;
+            array.push(parseResult.result);
+            tail = parseResult.tail;
+        }
+      throw "Could not find the closing bracket for the array `[" + input.slice(0, Math.max(input.length,4)).join('') + "...`";
       // TODO...
       //return tail;
-      throw "TODO: Parsing arrays not yet implemented";
     },
     parse = function(input) {
       // pre-condition: input.length > 0
