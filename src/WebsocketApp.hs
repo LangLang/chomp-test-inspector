@@ -32,7 +32,7 @@ websocketApp :: STM.FileStore -> Request -> WebSockets Hybi10 ()
 websocketApp fileStore req = do
   WS.acceptRequest req
 
-  -- Send the initial files to the application
+  -- Send the initial files to the client application
   files <- liftIO $ atomically $ TList.toList fileStore
   sendTextData $ pack $ show $ ReloadFiles files
 
@@ -71,6 +71,6 @@ listen fileStore messages = do
     catchDisconnect clients e =
       case fromException e of
         Just WS.ConnectionClosed -> liftIO $ do
-          STM.Clients.broadcast clients $ pack $ show $ Notify "A client disconnected."
+          STM.Clients.broadcast clients $ pack $ show $ Notify $ ClientDisconnected "TODO: client identifier"
           return ()
         _ -> return ()
