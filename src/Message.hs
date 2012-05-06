@@ -8,5 +8,9 @@ import FileStore
 
 data Patch = D Text
   deriving (Show, Read)
-data Message = Acknowledge | Notify String | ReloadFiles [FileInfo] | PatchFile FilePath Patch
+data Message = Acknowledge
+             | Notify String
+             | ReloadFiles [FileInfo]
+             | PatchFile FilePath Patch
+             | ParseError String
   deriving (Show, Read)

@@ -3,7 +3,7 @@ module WebsocketApp (websocketApp) where
 
 -- Standard modules
 import Prelude hiding (putStrLn)
-import Network.WebSockets as WS
+import Network.WebSockets as WS hiding (Message, ParseError)
 import Data.Monoid (mappend)
 import Control.Exception (fromException)
 import Data.Text (pack, unpack, intercalate, append, Text)
@@ -16,6 +16,7 @@ import Control.Concurrent.STM.TChan (newTChanIO, writeTChan)
 import Data.STM.TList (TList)
 import Data.Monoid
 import qualified Data.STM.TList as TList
+import Safe (readMay)
 
 -- Application modules
 import FileStore
@@ -53,11 +54,19 @@ listen fileStore messages = do
   where
     receive :: WS.WebSockets Hybi10 ()
     receive = do
-      message <- WS.receiveData :: WS.WebSockets Hybi10 Text
-      liftIO $ putStrLn ("Message received: '" `append` message `append` "'")
-      liftIO $ atomically $ writeTChan messages $ read $ unpack message
-      sendTextData $ pack $ show Acknowledge
+      messageString <- WS.receiveData :: WS.WebSockets Hybi10 Text
+      liftIO $ do
+        putStrLn $ "Message received from client (TODO: lookup client)..."
+        putStrLn $ "...message content: '" `append` messageString `append` "'"
+      case readMay $ unpack messageString :: Maybe Message of
+        Just message -> do
+          liftIO $ atomically $ writeTChan messages $ message
+          sendTextData $ pack $ show Acknowledge
+        Nothing -> do
+          liftIO $ putStrLn "...(error) could not parse recieved message"
+          sendTextData $ pack $ show $ ParseError $ take 255 $ unpack messageString
       return ()
+
     catchDisconnect :: WS.TextProtocol p => STM.Clients p -> SomeException -> WebSockets p ()
     catchDisconnect clients e =
       case fromException e of

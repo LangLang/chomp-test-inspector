@@ -9,9 +9,10 @@ maintainer:
 build-depends: MissingH -any, base -any, blaze-html -any,
                bytestring -any, case-insensitive -any, containers -any,
                directory -any, enumerator -any, hamlet -any, hinotify -any,
-               http-types -any, mtl -any, shakespeare -any, shakespeare-text -any,
-               stm -any, stm-tlist -any, text -any, wai -any, wai-app-static -any,
-               wai-websockets -any, warp -any, websockets -any
+               http-types -any, mtl -any, safe -any, shakespeare -any,
+               shakespeare-text -any, stm -any, stm-tlist -any, text -any,
+               wai -any, wai-app-static -any, wai-websockets -any, warp -any,
+               websockets -any
 stability:
 homepage:
 package-url:
@@ -47,8 +48,8 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: src
-other-modules: Message STM.Messages WebsocketApp FileStore WebApp
-               TestInspectorPage STM.FileStore
+other-modules: WebsocketApp FileStore Message WebApp
+               TestInspectorPage STM.FileStore STM.Messages
 ghc-prof-options:
 ghc-shared-options:
 ghc-options:
