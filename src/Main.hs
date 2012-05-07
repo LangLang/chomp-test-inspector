@@ -3,7 +3,7 @@ module Main (main) where
 
 -- Standard modules
 import System.IO (stdout, hFlush)
-import Data.Text hiding (map)
+import Data.Text hiding (map, filter)
 import Data.Text.IO (putStrLn, hPutStrLn)
 import Prelude hiding (putStrLn)
 import qualified Network.Wai.Handler.Warp as Warp
@@ -15,6 +15,7 @@ import Control.Concurrent.STM (TVar, atomically)
 import Data.STM.TList (TList)
 import qualified Data.STM.TList as TList
 import Control.Exception (try)
+import Control.Monad (liftM)
 import Control.Monad.Trans (liftIO)
 import qualified System.Directory as Dir
 import Data.String.Utils (endswith)
@@ -29,7 +30,7 @@ import qualified STM.FileStore as STM.FileStore
 main :: IO ()
 main = do
   --TODO: initialFiles <- try $ getDirectoryContents watchPath
-  initialFiles <- Dir.getDirectoryContents watchPath
+  initialFiles <- (liftM $ filter $ not . isDots) $ Dir.getDirectoryContents watchPath
   fileStore <- atomically $ STM.FileStore.fromPaths initialFiles
   --fileStore <- newMVar initialFiles
   inotify <- initINotify
@@ -38,7 +39,7 @@ main = do
   killINotify inotify
   where
     watchPath = "tests" :: FilePath
-    isDots f = not $ (endswith "/." f) || (endswith "/.." f)
+    isDots f = (endswith "/." f) || (endswith "/.." f) || (f == "..") || (f == ".")
     sourceFileChanged :: STM.FileStore -> Event -> IO ()
     sourceFileChanged fileStore e = do
       case e of
