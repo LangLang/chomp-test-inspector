@@ -54,7 +54,7 @@ pageJs = [st|
           console.log("...apply patch to file: ", file);
           console.log("...patch: ", patch);
         },
-        ParseError: function(message) { console.error("...previous sent message could not be parsed: ", message); },
+        ParseError: function(message) { console.error("...previous message this client sent could not be parsed: \n", message); },
         _: function() { console.error("...(error) unknown message type `" + this._key + "`" ); }
       }),
 
