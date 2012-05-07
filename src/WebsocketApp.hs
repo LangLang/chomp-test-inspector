@@ -31,16 +31,22 @@ import qualified STM.Messages as STM (Messages)
 websocketApp :: STM.FileStore -> Request -> WebSockets Hybi10 ()
 websocketApp fileStore req = do
   WS.acceptRequest req
+  liftIO $ putStrLn $ "Client connected (TODO: lookup client)..."
 
   -- Send the initial files to the client application
   files <- liftIO $ atomically $ TList.toList fileStore
-  sendTextData $ pack $ show $ ReloadFiles files
+  sendMessage $ ReloadFiles files
 
   -- Obtain a sink to use for sending data in another thread
   sink <- WS.getSink
 
   messages <- liftIO (newTChanIO :: IO STM.Messages)
   listen fileStore messages
+
+sendMessage :: (TextProtocol p) => Message -> WebSockets p () 
+sendMessage message = do
+  liftIO $ putStrLn $ "...send " `append` (pack $ show message)
+  sendTextData . pack $ show message
 
 listen :: STM.FileStore -> STM.Messages -> WS.WebSockets Hybi10 ()
 listen fileStore messages = do
@@ -61,10 +67,10 @@ listen fileStore messages = do
       case readMay $ unpack messageString :: Maybe Message of
         Just message -> do
           liftIO $ atomically $ writeTChan messages $ message
-          sendTextData $ pack $ show Acknowledge
+          sendMessage Acknowledge
         Nothing -> do
           liftIO $ putStrLn "...(error) could not parse recieved message"
-          sendTextData $ pack $ show $ ParseError $ take 255 $ unpack messageString
+          sendMessage $ ParseError $ take 255 $ unpack messageString
       return ()
 
     catchDisconnect :: WS.TextProtocol p => STM.Clients p -> SomeException -> WebSockets p ()
