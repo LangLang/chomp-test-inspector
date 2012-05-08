@@ -39,12 +39,12 @@ pageHtml = renderHtml [shamlet|
 
 #if PRODUCTION
 jsFiles = [
-    $(jsFile "message.js"),
-    $(jsFile "websocket-service.js")
+    $(jsFile "client/message.js"),
+    $(jsFile "client/websocket-service.js")
   ]
 #else
 jsFiles = [
-    $(jsFileReload "message.js"),
-    $(jsFileReload "websocket-service.js")
+    $(jsFileReload "client/message.js"),
+    $(jsFileReload "client/websocket-service.js")
   ]
 #endif
