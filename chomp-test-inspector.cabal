@@ -50,11 +50,28 @@ executable chomp-test-inspector
   hugs-options:
   nhc98-options:
   jhc-options:
-  build-depends: MissingH -any, base -any, blaze-html -any,
-                 bytestring -any, case-insensitive -any, containers -any,
-                 directory -any, enumerator -any, hamlet -any, hinotify -any,
-                 http-types -any, mtl -any, safe -any, shakespeare -any,
-                 shakespeare-js -any, stm -any, stm-tlist -any, text -any,
-                 wai -any, wai-app-static -any, wai-websockets -any, warp -any,
-                 websockets -any
+  build-depends:  MissingH -any, 
+                  base -any, 
+                  blaze-html -any,
+                  bytestring -any,
+                  case-insensitive -any,
+                  containers -any,
+                  directory -any,
+                  enumerator -any,
+                  hamlet -any,
+                  hinotify -any,
+                  http-types -any,
+                  mtl -any,
+                  safe -any,
+                  shakespeare -any,
+                  shakespeare-js -any,
+                  shakespeare-css -any,
+                  stm -any,
+                  stm-tlist -any,
+                  text -any,
+                  wai -any,
+                  wai-app-static -any,
+                  wai-websockets -any,
+                  warp -any,
+                  websockets -any
 

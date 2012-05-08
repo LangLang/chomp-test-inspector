@@ -7,7 +7,8 @@ module TestInspectorPage (pageHtml) where
 
 import Text.Hamlet (shamlet)
 import Text.Blaze.Renderer.Utf8 (renderHtml)
-import Text.Julius (JavascriptUrl, renderJavascriptUrl, jsFile, jsFileReload)
+import Text.Julius (renderJavascriptUrl, jsFile, jsFileReload)
+import Text.Cassius (renderCssUrl, cassiusFile, cassiusFileReload)
 import Text.Blaze (preEscapedLazyText)
 import qualified Data.Text.Lazy as LT (concat)
 
@@ -17,10 +18,12 @@ pageHtml = renderHtml [shamlet|
     <html>
       <head>
         <title>#{pageTitle} &mdash; #{pageSubTitle}
-        <link>
+        <link rel=stylesheet href=normalize/normalize.css>
         <script src=/socket.io/socket.io.js>
         <script src=/jquery/jquery.min.js>
         <script src=/adt/adt.js>
+        <style type=text/css>
+          ^{css}
         <script>
           ^{js}
       <body>
@@ -31,7 +34,9 @@ pageHtml = renderHtml [shamlet|
         <footer>^{copyright}
   |]
   where
-    js = preEscapedLazyText $ LT.concat $ map (renderJavascriptUrl (\_ _ -> undefined)) jsFiles
+    dummyRouter _ _ = undefined
+    js = preEscapedLazyText $ LT.concat $ map (renderJavascriptUrl dummyRouter) jsFiles
+    css = preEscapedLazyText $ LT.concat $ map (renderCssUrl dummyRouter) cassiusFiles
     pageTitle = "Chomp (A brave new LangLang compiler)" :: String
     pageSubTitle = "Test Inspector" :: String
     test1Src = "" :: String
@@ -39,12 +44,23 @@ pageHtml = renderHtml [shamlet|
 
 #if PRODUCTION
 jsFiles = [
-    $(jsFile "client/message.js"),
-    $(jsFile "client/websocket-service.js")
+    $(jsFile "client/src/message.js"),
+    $(jsFile "client/src/websocket-service.js")
   ]
 #else
 jsFiles = [
-    $(jsFileReload "client/message.js"),
-    $(jsFileReload "client/websocket-service.js")
+    $(jsFileReload "client/src/message.js"),
+    $(jsFileReload "client/src/websocket-service.js")
   ]
 #endif
+
+#if PRODUCTION
+cassiusFiles = [
+    $(cassiusFile "client/style/main.cassius")
+  ]
+#else
+cassiusFiles = [
+    $(cassiusFileReload "client/style/main.cassius")
+  ]
+#endif
+
