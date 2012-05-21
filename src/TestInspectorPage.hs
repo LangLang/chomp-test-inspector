@@ -22,6 +22,8 @@ pageHtml = renderHtml [shamlet|
         <script src=/socket.io/socket.io.js>
         <script src=/jquery/jquery.min.js>
         <script src=/adt/adt.js>
+        <script src=/adt/adt-html.js>
+        <script src=/supersimple/supersimple-editor.js>
         <style type=text/css>
           ^{css}
         <script>
