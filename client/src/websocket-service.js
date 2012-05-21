@@ -13,7 +13,7 @@
         console.log("...patch: ", patch);
       },
       ParseError: function(message) { console.error("...previous message this client sent could not be parsed: \n", message); },
-      _: function() { console.error("...(error) unknown message type `" + this._key + "`" ); }
+      _: function() { console.error("...(error) unknown message type `" + this._tag + "`" ); }
     }),
 
     sendMessage = function(ws, message) {

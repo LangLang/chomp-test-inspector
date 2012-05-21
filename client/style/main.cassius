@@ -1,5 +1,60 @@
+html
+  width: 100%
+  height: 100%
+
 body
-  background: #444
+  background: #272822
+  width: 100%
+  height: 100%
+  box-sizing: content-box
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
+
+h1,h2
+  text-rendering: optimizelegibility
+
+h1,h2,footer
+  text-align: center
 
 h1
-  color: #ccc
+  margin: 0.1em
+  color: #e4e4e4
+  font-size: 34px
+  text-shadow: 1px 1px 5px #000
+
+h2
+  margin: 0.2em 0 0.9em 0
+  color: #666
+  font-weight: normal
+  font-size: 16px
+
+a
+  color: #888
+  text-decoration: none
+
+a:hover
+  color: #e4e4e4
+
+footer
+  text-align: center
+  color: #aaa
+  margin: 5px 0 0 0
+  font-size: small
+  text-shadow: 1px 1px 2px #000
+
+footer a
+  color: #aaa
+
+.page-background
+  position: relative
+  width: 100%
+
+.page-background-results
+  position: absolute
+  left: 50%
+  width: 50%
+  height: 100%
+  background: #373832
+  border-left: solid 2px #222
+
+#editors
+  padding: 10px

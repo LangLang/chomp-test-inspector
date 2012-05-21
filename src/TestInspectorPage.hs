@@ -28,19 +28,19 @@ pageHtml = renderHtml [shamlet|
           ^{js}
       <body>
         <h1 .page-title>#{pageTitle}
-        <p>Reactive tests
-        <textarea>#{test1Src}
-        <textarea placeholder="Result...">
-        <footer>^{copyright}
+        <h2 .page-sub-title>A brave new <a href=http://langlang.org>LangLang</a> compiler
+        <div .page-background>
+          <div .page-background-results>
+          <div #editors>
+        <footer>Copyright &copy; <a href=http://rehno.lindeque.name/>Rehno Lindeque</a>.
   |]
   where
     dummyRouter _ _ = undefined
     js = preEscapedLazyText $ LT.concat $ map (renderJavascriptUrl dummyRouter) jsFiles
     css = preEscapedLazyText $ LT.concat $ map (renderCssUrl dummyRouter) cassiusFiles
-    pageTitle = "Chomp (A brave new LangLang compiler)" :: String
-    pageSubTitle = "Test Inspector" :: String
+    pageTitle = "Chomp" :: String
+    pageSubTitle = "" :: String
     test1Src = "" :: String
-    copyright = "Copyright (C) Rehno Lindeque."
 
 #if PRODUCTION
 jsFiles = [
