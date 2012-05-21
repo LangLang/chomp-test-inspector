@@ -39,18 +39,30 @@ pageHtml = renderHtml [shamlet|
     js = preEscapedLazyText $ LT.concat $ map (renderJavascriptUrl dummyRouter) jsFiles
     css = preEscapedLazyText $ LT.concat $ map (renderCssUrl dummyRouter) cassiusFiles
     pageTitle = "Chomp" :: String
-    pageSubTitle = "" :: String
+    pageSubTitle = "A brave new LangLang compiler" :: String
     test1Src = "" :: String
 
 #if PRODUCTION
 jsFiles = [
+    $(jsFile "client/src/header.js"),
+    $(jsFile "client/src/core.js"),
+    $(jsFile "client/src/state.js"),
+    $(jsFile "client/src/websocket.service.js"),
     $(jsFile "client/src/message.js"),
-    $(jsFile "client/src/websocket-service.js")
+    $(jsFile "client/src/message.service.js"),
+    $(jsFile "client/src/events.init.js"),
+    $(jsFile "client/src/footer.js")
   ]
 #else
 jsFiles = [
+    $(jsFileReload "client/src/header.js"),
+    $(jsFileReload "client/src/core.js"),
+    $(jsFileReload "client/src/state.js"),
+    $(jsFileReload "client/src/websocket.service.js"),
     $(jsFileReload "client/src/message.js"),
-    $(jsFileReload "client/src/websocket-service.js")
+    $(jsFileReload "client/src/message.service.js"),
+    $(jsFileReload "client/src/events.init.js"),
+    $(jsFileReload "client/src/footer.js")
   ]
 #endif
 
