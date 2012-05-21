@@ -1,7 +1,7 @@
   var Init = {
     messageService: function(){ 
       state.ws = WebSocketService.create('/');
-      MessageService.attach(state.ws);
+      MessageService.attach(state.ws, [Log.handler, Editor.handler]);
     }
   };
 

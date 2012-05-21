@@ -50,6 +50,8 @@ jsFiles = [
     $(jsFile "client/src/websocket.service.js"),
     $(jsFile "client/src/message.js"),
     $(jsFile "client/src/message.service.js"),
+    $(jsFile "client/src/log.handler.js"),
+    $(jsFile "client/src/editor.handler.js"),
     $(jsFile "client/src/events.init.js"),
     $(jsFile "client/src/footer.js")
   ]
@@ -61,6 +63,8 @@ jsFiles = [
     $(jsFileReload "client/src/websocket.service.js"),
     $(jsFileReload "client/src/message.js"),
     $(jsFileReload "client/src/message.service.js"),
+    $(jsFileReload "client/src/log.handler.js"),
+    $(jsFileReload "client/src/editor.handler.js"),
     $(jsFileReload "client/src/events.init.js"),
     $(jsFileReload "client/src/footer.js")
   ]
