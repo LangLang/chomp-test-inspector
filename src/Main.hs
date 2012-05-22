@@ -34,7 +34,7 @@ main = do
   fileStore <- atomically $ STM.FileStore.fromPaths initialFiles
   --fileStore <- newMVar initialFiles
   inotify <- initINotify
-  addWatch inotify [Modify] watchPath $ sourceFileChanged fileStore
+  addWatch inotify [Modify, Create, Delete, Move] watchPath $ sourceFileChanged fileStore
   Warp.runSettings (webAppSettings fileStore) webApp
   killINotify inotify
   where
@@ -52,8 +52,8 @@ main = do
             return ()
         MovedIn False p c -> putStrLn $ "'" `append` pack p `append` "' was moved in." --TODO: use the cookie to check whether the file was actually renamed
         MovedSelf _ -> putStrLn "The watched path was moved and hence no longer exists."
-        Created True p -> putStrLn $ "'" `append` pack p `append` "' was created."
-        Deleted True p -> putStrLn $ "'" `append` pack p `append` "' was deleted."
+        Created False p -> putStrLn $ "'" `append` pack p `append` "' was created."
+        Deleted False p -> putStrLn $ "'" `append` pack p `append` "' was deleted."
         DeletedSelf -> putStrLn "The watched path was moved and hence no longer exists."
         Unmounted -> putStrLn "The watched path was unmounted and hence no longer exists."
         QOverflow -> putStrLn "TODO: The queue overflowed, resend all the files."
