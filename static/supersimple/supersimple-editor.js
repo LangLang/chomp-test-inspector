@@ -6,39 +6,34 @@
 var supersimple = supersimple || {};
 (function() {
 "use strict";
-  // Core goes here
   var
-    Editor = function(textContents) {
-      this.el = html.evalCons.pre(
-        {class: "supersimple-editor-input", contenteditable: "true", style: "padding: 20px;background: #ddd; outline: none;"}, 
-        typeof textContents === 'string'? textContents : "");
-      // Prevent formatting keys:
-      this.keys = { ctrl: false };
-      (function(self){
-        self.el.onkeydown = function(e) {
-          var 
-            code = e.charCode? e.charCode : e.keyCode,
-            c = String.fromCharCode(code);
-          if (e.ctrlKey)
-            self.keys.ctrl = true;
-          if (self.keys.ctrl && (c === 'B' || c === 'I'))
-            return false;
-          return true;
-        };
-        self.el.onkeyup = function(e) {
-          if (e.ctrlKey)
-            self.keys.ctrl = false;
-          return true;
-        };
-        self.el.onblur = self.el.onfocus = function(e) {
-          self.keys.ctrl = false;
-          return true;
-        };
-      })(this);
+    attachEvents = function(el) {
+      var keys = { ctrl: false };
+      el.addEventListener('keydown', function(e) {
+        var 
+          code = e.charCode? e.charCode : e.keyCode,
+          c = String.fromCharCode(code);
+        if (e.ctrlKey)
+          keys.ctrl = true;
+        if (keys.ctrl && (c === 'B' || c === 'I'))
+          e.preventDefault();
+      }, false);
+      el.addEventListener('keyup', function(e) { keys.ctrl = !e.ctrlKey; return true; }, false);
+      el.addEventListener('blur', function(e) { keys.ctrl = false; return true; }, false);
+      el.addEventListener('focus', function(e) { keys.ctrl = false; return true; }, false);
     };
 
-  supersimple.editor = function() {
-    return new Editor();
+  supersimple.editor = {
+    html: function(textContents) {
+      var 
+        el = html.evalCons.pre(
+          {class: "supersimple-editor-input", contenteditable: "true", style: "padding: 20px;background: #ddd; outline: none;"}, 
+          typeof textContents === 'string'? textContents : "");
+      // Events will not be attached in older versions of IE < 9.
+      if (typeof el.addEventListener === 'function')
+        attachEvents(el);
+      return el;
+    }
   };
   // Export supersimple to a CommonJS module if exports is available
   if (typeof(exports) !== "undefined" && exports !== null)
