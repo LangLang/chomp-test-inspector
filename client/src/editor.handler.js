@@ -8,14 +8,16 @@
           $('#editors').append(
             html.div({class: "editor"},
               html.div({class: "editor-source"},
-                html.input({class: "editor-source-filename", value: files[i]})
+                html.input({class: "editor-source-filename", value: files[i]}),
+                html.editor()
               ),
               html.div({class: "editor-result"},
-                html.input({class: "editor-result-filename", readonly: "readonly", value: files[i] + ".??? (TODO)"})
+                html.input({class: "editor-result-filename", readonly: "readonly", value: files[i] + ".??? (TODO)"}),
+                html.editor()
               ),
               html.div({style: "clear:both"})
             )
           );
       }
     });
-  })(html.evalCons);
+  })(adt({ editor: supersimple.editor.html }, html.evalCons));
