@@ -1,18 +1,22 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, CPP #-}
 module FileObserver(FileObserver, forkFileObserver, killFileObserver) where
 
 -- Standard modules
 import Prelude hiding (putStrLn)
 import Data.Text hiding (map, filter)
-import Data.Text.IO (putStrLn)
+import Data.Text.IO (putStrLn, hPutStrLn)
 import Data.String.Utils (endswith)
 import qualified Data.STM.TList as STM (append, appendList)
 import Control.Monad (liftM)
 --import Control.Monad.Trans (liftIO)
---import Control.Exception (try)
 import Control.Concurrent.STM (atomically)
+import System.IO (stderr)
+import System.IO.Error (try, ioeGetErrorType, IOErrorType)
 import qualified System.Directory as Dir
 import System.INotify (INotify, EventVariety(..), Event(..), initINotify, killINotify, addWatch)
+#ifdef __GLASGOW_HASKELL__
+import qualified GHC.IO.Exception as Exception
+#endif
 
 -- Application modules
 import qualified STM.FileStore as STM (FileStore)
@@ -21,17 +25,40 @@ import qualified STM.FileStore as STM (FileStore)
 type FileObserver = INotify
 
 -- Run the asynchronous file observer
-forkFileObserver :: FilePath -> STM.FileStore -> IO FileObserver
-forkFileObserver watchPath fileStore = do
-  -- Get the initial contents of the directory being watched
-  initialFiles <- (liftM $ filter $ not . isDots) $ Dir.getDirectoryContents watchPath
-  _ <- atomically $ STM.appendList fileStore initialFiles
-  -- Setup inotify to watch the directory
-  inotify <- initINotify 
-  _ <- addWatch inotify [Modify, Create, Delete, Move] watchPath $ sourceFileChanged fileStore
-  return inotify
+forkFileObserver :: FilePath -> STM.FileStore -> IO (Maybe FileObserver)
+forkFileObserver watchPath fileStore = do 
+  filesOrError <- try $ do
+    -- Get the initial contents of the directory being watched
+    initialFiles <- (liftM $ filter $ not . isDots) $ Dir.getDirectoryContents watchPath
+    atomically $ STM.appendList fileStore initialFiles
+  case filesOrError of
+    Left e -> do
+      case generateErrorMessage $ ioeGetErrorType e of 
+        Just message -> do
+          hPutStrLn stderr $ pack message
+          return Nothing
+        Nothing -> ioError e
+    Right _ -> do
+      -- Setup inotify to watch the directory
+      inotify <- initINotify 
+      _ <- addWatch inotify [Modify, Create, Delete, Move] watchPath $ sourceFileChanged fileStore
+      return $ Just inotify
   where
     isDots f = (endswith "/." f) || (endswith "/.." f) || (f == "..") || (f == ".")
+    
+    -- Generate a message from an IO error  
+    generateErrorMessage :: IOErrorType -> Maybe String
+#ifdef __GLASGOW_HASKELL__
+    generateErrorMessage errorType = case errorType of
+      -- GHC only:
+      Exception.NoSuchThing -> Just $ "The path supplied `" ++ watchPath ++ "` does not exist."
+      Exception.PermissionDenied -> Just $ "Permission to read the the path `" ++ watchPath ++ "` was denied."      
+      Exception.InvalidArgument -> Just $ "The path supplied `" ++ watchPath ++ "` is not a valid directory name."
+      Exception.InappropriateType -> Just $ "The path supplied `" ++ watchPath ++ "` refers to a non-directory object."
+      _ -> Nothing
+#else
+    generateErrorMessage errorType = Nothing
+#endif
 
 -- Stop the asynchronous file observer
 killFileObserver :: FileObserver -> IO ()
