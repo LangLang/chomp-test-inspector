@@ -5,10 +5,15 @@
     ReloadFiles: function(files) { 
       console.log("...reload files: ", files);
     },
+    LoadFile: function(file) { 
+      console.log("...load file: ", file);
+    },
     PatchFile: function(filePath, patch) {
       console.log("...apply patch to file: ", file);
       console.log("...patch: ", patch);
     },
-    ParseError: function(message) { console.error("...previous message this client sent could not be parsed: \n", message); },
+    ParseError: function(message) {
+      console.error("...previous message this client sent could not be parsed: \n", message); 
+    },
     _: function() { console.error("...(error) unknown message type `" + this._tag + "`" ); }
   });

@@ -1,15 +1,19 @@
-module STM.FileStore (FileStore, fromPaths) where
+module STM.FileStore (FileStore, newIO, fromPaths) where
 
 -- Standard modules
-import Control.Monad (liftM, foldM)
-import Control.Concurrent.STM (STM, atomically)
-import Data.STM.TList (TList)
+import Control.Monad (liftM)
+import Control.Concurrent.STM (STM)
+import Data.STM.TList (TList, emptyIO)
 import qualified Data.STM.TList as TList
 
 -- Application modules
 import FileStore
 
 type FileStore = TList FileInfo
+
+newIO :: IO FileStore
+newIO = emptyIO
+
 fromPaths :: [FilePath] -> STM FileStore
 fromPaths = liftM fst . TList.fromList
 

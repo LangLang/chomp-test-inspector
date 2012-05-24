@@ -1,4 +1,4 @@
-module STM.Messages (Messages) where
+module STM.Messages (Messages, newIO) where
 
 -- Standard modules
 import Control.Concurrent.STM.TChan
@@ -7,3 +7,6 @@ import Control.Concurrent.STM.TChan
 import Message
 
 type Messages = TChan Message
+
+newIO :: IO Messages
+newIO = newTChanIO

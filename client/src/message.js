@@ -1,1 +1,1 @@
-  var Message = adt('Acknowledge','Notify','ReloadFiles','PatchFile', 'ParseError');
+  var Message = adt('Acknowledge','Notify','ReloadFiles','LoadFile','PatchFile','ParseError');

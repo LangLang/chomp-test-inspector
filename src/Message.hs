@@ -14,6 +14,7 @@ data Notification = Info String
 data Message = Acknowledge
              | Notify Notification
              | ReloadFiles [FileInfo]
+             | LoadFile FileInfo
              | PatchFile FilePath Patch
              | ParseError String
   deriving (Show, Read)
