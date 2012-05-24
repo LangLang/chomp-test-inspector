@@ -5,21 +5,18 @@ module WebsocketApp (websocketApp) where
 import Prelude hiding (putStrLn)
 import Network.WebSockets as WS hiding (Message, ParseError)
 import Control.Exception (fromException)
-import Data.Text (pack, unpack, intercalate, append, Text)
+import Data.Text (pack, unpack, append, Text)
 import Data.Text.IO (putStrLn)
 import Control.Monad.Trans (liftIO)
 import Control.Exception (SomeException)
 --import Control.Concurrent (MVar, newMVar, modifyMVar_, readMVar)
 import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TChan (newTChanIO, writeTChan)
-import Data.STM.TList (TList)
-import Data.Monoid
+import Control.Concurrent.STM.TChan (writeTChan)
 import qualified Data.STM.TList as TList
 import Safe (readMay)
 
 -- Application modules
-import FileStore
-import qualified STM.FileStore as STM (FileStore)
+import qualified STM.FileStore as STM (FileStore())
 import qualified STM.Clients as STM (Clients)
 import qualified STM.Clients as STM.Clients
 import Message
@@ -28,26 +25,28 @@ import qualified STM.Messages as STM (Messages)
 
 -- Websocket application responsible for updating the client browser and receiving updates from the
 -- the client
-websocketApp :: STM.FileStore -> Request -> WebSockets Hybi10 ()
-websocketApp fileStore req = do
+websocketApp :: STM.FileStore -> STM.Messages -> STM.Messages -> Request -> WebSockets Hybi10 ()
+websocketApp fileStore serverMessages clientMessages req = do
   WS.acceptRequest req
   liftIO $ putStrLn $ "Client connected (TODO: lookup client)..."
 
-  -- Send the initial files to the client application
+  -- Send the list of files currently in the file store to the client application
+  -- TODO: There's a synchronization issue here: if a file is loaded it will be added to the file store
+  --       before the LOAD message is sent to the client. 
+  --       The file store should be updated by the message processing queue, not by the FileObserver!
   files <- liftIO $ atomically $ TList.toList fileStore
   sendMessage $ ReloadFiles files
-
+  
   -- Obtain a sink to use for sending data in another thread
   sink <- WS.getSink
-
-  messages <- liftIO STM.Messages.newIO
   
+  -- Listen to incoming messages, adding them to a incomming client message queue
   -- TODO: listen should happen in a loop (probably forkIO'd and given the sink generated above)
   --       See STM.Clients
-  listen fileStore messages
+  listen fileStore clientMessages
   
+  -- TODO: Add the client information to a list
   -- TODO: forkIO $ processMessages serverMessages clientMessages
-  -- TODO: pass server messages into this function  
 
 sendMessage :: TextProtocol p => Message -> WebSockets p () 
 sendMessage message = do

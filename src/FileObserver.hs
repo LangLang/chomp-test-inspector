@@ -33,9 +33,7 @@ forkFileObserver watchPath fileStore messages = do
   filesOrError <- try $ do
     -- Get the initial contents of the directory being watched
     initialFiles <- (liftM $ filter $ not . isDots) $ Dir.getDirectoryContents watchPath
-    atomically $ do
-      _ <- STM.appendList fileStore initialFiles
-      STM.writeTChan messages $ Message.ReloadFiles initialFiles
+    atomically $ STM.appendList fileStore initialFiles
   case filesOrError of
     Left e -> do
       case generateErrorMessage $ ioeGetErrorType e of 
