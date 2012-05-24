@@ -11,21 +11,23 @@ import WebsocketApp
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.FileStore as STM.FileStore
 import FileObserver
+import qualified STM.Messages (newIO)
 
 -- Application entry point
 main :: IO ()
 main = do
   -- Instantiate shared resources
   fileStore <- STM.FileStore.newIO
-  --serverMessages <- STM.Messages.newIO -- TODO
+  serverMessages <- STM.Messages.newIO
+  clientMessages <- STM.Messages.newIO
   -- Run asynchronous observers
-  maybeId <- forkFileObserver watchPath fileStore 
+  maybeId <- forkFileObserver watchPath fileStore serverMessages 
   case maybeId of
     Just observerId -> do
       -- Run the front controllers
       Warp.runSettings (webAppSettings fileStore) webApp
       -- Stop the asynchronous observers
-      killFileObserver observerId  
+      killFileObserver observerId
     Nothing ->
       return ()
   where
@@ -38,12 +40,3 @@ webAppSettings fileStore = Warp.defaultSettings
   { Warp.settingsPort = 8080
   , Warp.settingsIntercept = interceptWith defaultWebSocketsOptions $ websocketApp fileStore
   }
-  
-  
-  
-  
-  
-  
-  
-  
-  

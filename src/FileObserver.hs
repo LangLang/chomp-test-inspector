@@ -10,6 +10,7 @@ import qualified Data.STM.TList as STM (append, appendList)
 import Control.Monad (liftM)
 --import Control.Monad.Trans (liftIO)
 import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM as STM (writeTChan)
 import System.IO (stderr)
 import System.IO.Error (try, ioeGetErrorType, IOErrorType)
 import qualified System.Directory as Dir
@@ -19,18 +20,22 @@ import qualified GHC.IO.Exception as Exception
 #endif
 
 -- Application modules
+import qualified Message (Message(..))
 import qualified STM.FileStore as STM (FileStore)
+import qualified STM.Messages as STM (Messages)
 
 -- Types
 type FileObserver = INotify
 
 -- Run the asynchronous file observer
-forkFileObserver :: FilePath -> STM.FileStore -> IO (Maybe FileObserver)
-forkFileObserver watchPath fileStore = do 
+forkFileObserver :: FilePath -> STM.FileStore -> STM.Messages -> IO (Maybe FileObserver)
+forkFileObserver watchPath fileStore messages = do 
   filesOrError <- try $ do
     -- Get the initial contents of the directory being watched
     initialFiles <- (liftM $ filter $ not . isDots) $ Dir.getDirectoryContents watchPath
-    atomically $ STM.appendList fileStore initialFiles
+    atomically $ do
+      _ <- STM.appendList fileStore initialFiles
+      STM.writeTChan messages $ Message.ReloadFiles initialFiles
   case filesOrError of
     Left e -> do
       case generateErrorMessage $ ioeGetErrorType e of 
@@ -41,7 +46,7 @@ forkFileObserver watchPath fileStore = do
     Right _ -> do
       -- Setup inotify to watch the directory
       inotify <- initINotify 
-      _ <- addWatch inotify [Modify, Create, Delete, Move] watchPath $ sourceFileChanged fileStore
+      _ <- addWatch inotify [Modify, Create, Delete, Move] watchPath $ sourceFileChanged fileStore messages
       return $ Just inotify
   where
     isDots f = (endswith "/." f) || (endswith "/.." f) || (f == "..") || (f == ".")
@@ -68,8 +73,8 @@ killFileObserver fileObserver = killINotify fileObserver
 --serverLoadFile :: FileInfo -> IO () 
 --serverLoadFile fileInfo = atomically $ Messages
 
-sourceFileChanged :: STM.FileStore -> Event -> IO ()
-sourceFileChanged fileStore e = do
+sourceFileChanged :: STM.FileStore -> STM.Messages -> Event -> IO ()
+sourceFileChanged fileStore messages e = do
   case e of
     Modified False p -> putStrLn $ (fromMaybeFilePath p) `append` " was modified."
     MovedOut False p _ -> do
@@ -82,8 +87,9 @@ sourceFileChanged fileStore e = do
     MovedSelf _ -> putStrLn "The watched path was moved and hence no longer exists."
     Created False p -> do
       putStrLn $ "'" `append` pack p `append` "' was created."
-      _ <- atomically $ STM.append fileStore p
-      -- TODO: Add a load event to the outgoing message queue
+      _ <- atomically $ do
+        _ <- STM.append fileStore p
+        STM.writeTChan messages $ Message.LoadFile p 
       return ()
     Deleted False p -> putStrLn $ "'" `append` pack p `append` "' was deleted."
     DeletedSelf -> putStrLn "The watched path was moved and hence no longer exists."
