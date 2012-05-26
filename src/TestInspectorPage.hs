@@ -7,12 +7,14 @@ module TestInspectorPage (pageHtml) where
 
 import Text.Hamlet (shamlet)
 import Text.Blaze.Renderer.Utf8 (renderHtml)
-import Text.Julius (renderJavascriptUrl, jsFile, jsFileReload)
+import Text.Julius (JavascriptUrl, renderJavascriptUrl, jsFile, jsFileReload)
 import Text.Cassius (renderCssUrl, cassiusFile, cassiusFileReload)
 import Text.Blaze (preEscapedLazyText)
 import qualified Data.Text.Lazy as LT (concat)
+import qualified Data.ByteString.Lazy as L (ByteString)
 
 -- Html page
+pageHtml :: L.ByteString
 pageHtml = renderHtml [shamlet|
     $doctype 5
     <html>
@@ -34,7 +36,12 @@ pageHtml = renderHtml [shamlet|
         <div .page-background>
           <div .page-background-results>
           <div #editors>
-        <footer>Copyright &copy; <a href=http://rehno.lindeque.name/>Rehno Lindeque</a>.
+        <footer>
+          <p style="" xmlns:dct="http://purl.org/dc/terms/" xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#">
+            <a style="display: inline-block; margin-right: 20px;" rel="license" href="http://creativecommons.org/publicdomain/zero/1.0/">
+              <img src="http://i.creativecommons.org/p/zero/1.0/88x31.png" style="border-style: none;" alt="CC0">
+            To the extent possible under law, <a rel="dct:publisher" href="http://rehno.lindeque.name/"><span property="dct:title">Rehno Lindeque</span></a>
+             has waived all copyright and related or neighboring rights to <a href="https://github.com/rehno-lindeque/chomp-test-inspector.js" property="dct:title">adt.js</a> and <a href="https://github.com/rehno-lindeque/adt-html.js" property="dct:title">adt-html.js</a>.
   |]
   where
     dummyRouter _ _ = undefined
@@ -42,7 +49,6 @@ pageHtml = renderHtml [shamlet|
     css = preEscapedLazyText $ LT.concat $ map (renderCssUrl dummyRouter) cassiusFiles
     pageTitle = "Chomp" :: String
     pageSubTitle = "A brave new LangLang compiler" :: String
-    test1Src = "" :: String
 
 #if PRODUCTION
 jsFiles = [
@@ -81,4 +87,3 @@ cassiusFiles = [
     $(cassiusFileReload "client/style/main.cassius")
   ]
 #endif
-

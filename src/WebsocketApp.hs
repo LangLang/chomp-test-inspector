@@ -18,9 +18,8 @@ import Safe (readMay)
 -- Application modules
 import qualified STM.FileStore as STM (FileStore())
 import qualified STM.Clients as STM (Clients)
-import qualified STM.Clients as STM.Clients
+import qualified STM.Clients as Clients
 import Message
-import qualified STM.Messages (newIO)
 import qualified STM.Messages as STM (Messages)
 
 -- Websocket application responsible for updating the client browser and receiving updates from the
@@ -55,7 +54,7 @@ sendMessage message = do
 
 listen :: STM.FileStore -> STM.Messages -> WS.WebSockets Hybi10 ()
 listen fileStore messages = do
-  clients <- liftIO $ TList.emptyIO
+  clients <- liftIO $ Clients.newIO
   (flip WS.catchWsError $ catchDisconnect clients) receive
   return ()
   {-
@@ -82,6 +81,6 @@ listen fileStore messages = do
     catchDisconnect clients e =
       case fromException e of
         Just WS.ConnectionClosed -> liftIO $ do
-          STM.Clients.broadcast clients $ pack $ show $ Notify $ ClientDisconnected "TODO: client identifier"
+          Clients.broadcast clients $ pack $ show $ Notify $ ClientDisconnected "TODO: client identifier"
           return ()
         _ -> return ()
