@@ -50,14 +50,21 @@ input,textarea,select
   border-radius: 3px
 
 footer
+  position: fixed
+  bottom: 0
+  width: 100%
   text-align: center
   color: #aaa
   margin: 5px 0 0 0
   font-size: small
   text-shadow: 1px 1px 2px #000
+  background: #30312e
 
 footer a
-  color: #aaa
+  color: #ccc
+
+footer a:hover
+  color: #fff
 
 .page-background
   position: relative
@@ -68,7 +75,7 @@ footer a
   left: 50%
   width: 50%
   height: 100%
-  background: #373832
+  background: #30312e
   border-left: solid 2px #222
 
 #editors
@@ -85,4 +92,16 @@ footer a
   box-sizing: border-box
 
 .editor-result-filename, .editor-source-filename
+  color: #ddd
+  background: none
+  border: none
+  outline: none
   margin: 2px 0
+
+.supersimple-editor-input
+  background: #ddd
+  background: rgba(255,255,255,0.1)
+  border-radius: 3px
+  padding: 20px
+  outline: none
+  margin: 4px 0
