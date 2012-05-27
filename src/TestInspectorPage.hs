@@ -36,15 +36,7 @@ pageHtml = renderHtml [shamlet|
         <div .page-background>
           <div .page-background-results>
           <div #editors>
-        <footer>
-          <div xmlns:dct="http://purl.org/dc/terms/" xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#">
-            <a style="display: inline-block; vertical-align: middle; margin-right: 20px;" rel="license" href="http://creativecommons.org/publicdomain/zero/1.0/">
-              <img style="" src="http://i.creativecommons.org/p/zero/1.0/88x31.png" style="border-style: none;" alt="CC0">
-            <p style="display: inline-block;">
-              To the extent possible under law,
-              \ <a rel="dct:publisher" href="http://rehno.lindeque.name/"><span property="dct:title">Rehno Lindeque</span></a>
-              \ has waived all copyright and related or neighboring rights to
-              \ <a href="https://github.com/rehno-lindeque/chomp-test-inspector.js" property="dct:title">chomp-test-inspector</a>.
+        <footer .page-statusbar>
   |]
   where
     dummyRouter _ _ = undefined

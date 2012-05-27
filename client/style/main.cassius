@@ -50,23 +50,6 @@ input,textarea,select
   -moz-border-radius: 3px
   border-radius: 3px
 
-footer
-  position: fixed
-  bottom: 0
-  width: 100%
-  text-align: center
-  color: #ccc
-  margin: 5px 0 0 0
-  font-size: small
-  text-shadow: 1px 1px 2px #000
-  background: #525350
-
-footer a
-  color: #ccc
-
-footer a:hover
-  color: #fff
-
 .page-background
   position: relative
   width: 100%
@@ -85,6 +68,21 @@ footer a:hover
 
 .page-background-results
   min-height: 100%
+
+.page-statusbar
+  position: fixed
+  bottom: 0
+  width: 100%
+  height: 40px
+  color: rgba(230, 230, 230, 0.0)
+  background-image: linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
+  background-image: -o-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
+  background-image: -moz-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
+  background-image: -webkit-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
+  background-image: -ms-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
+
+.show-status
+  color: rgba(230, 230, 230, 1.0)
 
 .editor
   position: relative
@@ -106,6 +104,7 @@ footer a:hover
 .supersimple-editor-input
   background: #ddd
   background: rgba(255,255,255,0.1)
+  color: #fff
   border-radius: 3px
   padding: 20px
   outline: none
