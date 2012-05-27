@@ -8,6 +8,7 @@ body
   height: 100%
   box-sizing: content-box
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif
+  min-height: 100%
 
 h1,h2
   text-rendering: optimizelegibility
@@ -54,11 +55,11 @@ footer
   bottom: 0
   width: 100%
   text-align: center
-  color: #aaa
+  color: #ccc
   margin: 5px 0 0 0
   font-size: small
   text-shadow: 1px 1px 2px #000
-  background: #30312e
+  background: #525350
 
 footer a
   color: #ccc
@@ -69,6 +70,7 @@ footer a:hover
 .page-background
   position: relative
   width: 100%
+  min-height: 100%
 
 .page-background-results
   position: absolute
@@ -80,6 +82,9 @@ footer a:hover
 
 #editors
   padding: 10px
+
+.page-background-results
+  min-height: 100%
 
 .editor
   position: relative
