@@ -27,7 +27,7 @@ var supersimple = supersimple || {};
     html: function(textContents) {
       var 
         el = html.evalCons.pre(
-          {class: "supersimple-editor-input", contenteditable: "true", style: "padding: 20px;background: #ddd; outline: none;"}, 
+          {class: "supersimple-editor-input", contenteditable: "true"}, 
           typeof textContents === 'string'? textContents : "");
       // Events will not be attached in older versions of IE < 9.
       if (typeof el.addEventListener === 'function')
