@@ -37,7 +37,7 @@ pageHtml = renderHtml [shamlet|
           <div .page-background-results>
           <div #editors>
         <footer>
-          <p style="" xmlns:dct="http://purl.org/dc/terms/" xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#">
+          <p xmlns:dct="http://purl.org/dc/terms/" xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#">
             <a style="vertical-align: middle; margin-right: 20px;" rel="license" href="http://creativecommons.org/publicdomain/zero/1.0/">
               <img src="http://i.creativecommons.org/p/zero/1.0/88x31.png" style="border-style: none;" alt="CC0">
             To the extent possible under law,
