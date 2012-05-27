@@ -50,7 +50,7 @@ pageHtml = renderHtml [shamlet|
     dummyRouter _ _ = undefined
     js = preEscapedLazyText $ LT.concat $ map (renderJavascriptUrl dummyRouter) jsFiles
     css = preEscapedLazyText $ LT.concat $ map (renderCssUrl dummyRouter) cassiusFiles
-    pageTitle = "Chomp" :: String
+    pageTitle = "Chomp" :: String 
     pageSubTitle = "A brave new LangLang compiler" :: String
 
 #if PRODUCTION

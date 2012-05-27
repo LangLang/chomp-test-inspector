@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module WebsocketApp (websocketApp) where
+module WebsocketApp (Clients, websocketApp) where
 
 -- Standard modules
 import Prelude hiding (putStrLn)
@@ -22,10 +22,12 @@ import qualified STM.Clients as Clients
 import Message
 import qualified STM.Messages as STM (Messages)
 
+type Clients = STM.Clients Hybi10
+
 -- Websocket application responsible for updating the client browser and receiving updates from the
 -- the client
-websocketApp :: STM.FileStore -> STM.Messages -> STM.Messages -> Request -> WebSockets Hybi10 ()
-websocketApp fileStore serverMessages clientMessages req = do
+websocketApp :: Clients -> STM.FileStore -> STM.Messages -> STM.Messages -> Request -> WebSockets Hybi10 ()
+websocketApp clients fileStore serverMessages clientMessages req = do
   WS.acceptRequest req
   liftIO $ putStrLn $ "Client connected (TODO: lookup client)..."
 
