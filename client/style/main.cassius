@@ -57,6 +57,7 @@ input,textarea,select
 
 .page-background-results
   position: absolute
+  box-sizing: border-box
   left: 50%
   width: 50%
   height: 100%

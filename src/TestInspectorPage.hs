@@ -5,13 +5,14 @@
 
 module TestInspectorPage (pageHtml) where
 
+-- Standard modules
+import qualified Data.Text.Lazy as LT (concat)
+import qualified Data.ByteString.Lazy as L (ByteString)
 import Text.Hamlet (shamlet)
 import Text.Blaze.Renderer.Utf8 (renderHtml)
 import Text.Julius (JavascriptUrl, renderJavascriptUrl, jsFile, jsFileReload)
 import Text.Cassius (renderCssUrl, cassiusFile, cassiusFileReload)
 import Text.Blaze (preEscapedLazyText)
-import qualified Data.Text.Lazy as LT (concat)
-import qualified Data.ByteString.Lazy as L (ByteString)
 
 -- Html page
 pageHtml :: L.ByteString

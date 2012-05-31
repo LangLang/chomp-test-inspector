@@ -1,6 +1,6 @@
 module Message (Message(..), Notification(..)) where
 
--- System modules
+-- Standard modules
 import Data.Text
 
 -- Application modules
