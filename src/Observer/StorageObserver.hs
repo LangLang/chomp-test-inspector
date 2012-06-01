@@ -74,25 +74,30 @@ killFileObserver fileObserver = killINotify fileObserver
 sourceFileChanged :: STM.FileStore -> STM.Messages -> Event -> IO ()
 sourceFileChanged fileStore messages e = do
   case e of
-    Modified False p -> putStrLn $ (fromMaybeFilePath p) `append` " was modified."
+    Modified False p -> do
+      putStrLn $ (fromMaybeFilePath p) `append` " was modified."
     MovedOut False p _ -> do
       putStrLn $ "'" `append` pack p `append` "' was moved out."
-      --readMVar fileStore
-      do
-        --n <- atomically $ TList.start fileStore
-        return ()
-    MovedIn False p _ -> putStrLn $ "'" `append` pack p `append` "' was moved in." --TODO: use the cookie to check whether the file was actually renamed
-    MovedSelf _ -> putStrLn "The watched path was moved and hence no longer exists."
+    MovedIn False p _ -> do
+      putStrLn $ "'" `append` pack p `append` "' was moved in." --TODO: use the cookie to check whether the file was actually renamed
+    MovedSelf _ -> do
+      putStrLn "The watched path was moved and hence no longer exists."
+      atomically $ STM.writeTChan messages $ Message.ReloadFiles []
     Created False p -> do
       putStrLn $ "'" `append` pack p `append` "' was created."
       _ <- atomically $ do
         _ <- STM.append fileStore p
         STM.writeTChan messages $ Message.LoadFile p 
       return ()
-    Deleted False p -> putStrLn $ "'" `append` pack p `append` "' was deleted."
-    DeletedSelf -> putStrLn "The watched path was moved and hence no longer exists."
-    Unmounted -> putStrLn "The watched path was unmounted and hence no longer exists."
-    QOverflow -> putStrLn "TODO: The queue overflowed, resend all the files."
+    Deleted False p -> do 
+      putStrLn $ "'" `append` pack p `append` "' was deleted."
+    DeletedSelf -> do
+      putStrLn "The watched path was moved and hence no longer exists."
+      atomically $ STM.writeTChan messages $ Message.ReloadFiles []
+    Unmounted -> do
+      putStrLn "The watched path was unmounted and hence no longer exists."
+    QOverflow -> do
+      putStrLn "TODO: The queue overflowed, resend all the files."
     _ -> return ()
   where
     fromMaybeFilePath :: Maybe FilePath -> Text
