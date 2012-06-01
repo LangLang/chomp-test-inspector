@@ -20,6 +20,7 @@ import qualified GHC.IO.Exception as Exception
 #endif
 
 -- Application modules
+import Message (Message)
 import qualified Message (Message(..))
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.Messages as STM (Messages)
@@ -81,24 +82,30 @@ sourceFileChanged fileStore messages e = do
     MovedIn False p _ -> do
       putStrLn $ "'" `append` pack p `append` "' was moved in." --TODO: use the cookie to check whether the file was actually renamed
     MovedSelf _ -> do
+      -- Empty the storage
       putStrLn "The watched path was moved and hence no longer exists."
-      atomically $ STM.writeTChan messages $ Message.ReloadFiles []
+      enqueueMessage $ Message.ReloadFiles []
     Created False p -> do
       putStrLn $ "'" `append` pack p `append` "' was created."
+      {- TODO: This is now done in the storage handler
       _ <- atomically $ do
         _ <- STM.append fileStore p
-        STM.writeTChan messages $ Message.LoadFile p 
+        STM.writeTChan messages $ Message.LoadFile p
+      -} 
+      enqueueMessage $ Message.LoadFile p
       return ()
     Deleted False p -> do 
       putStrLn $ "'" `append` pack p `append` "' was deleted."
     DeletedSelf -> do
       putStrLn "The watched path was moved and hence no longer exists."
-      atomically $ STM.writeTChan messages $ Message.ReloadFiles []
+      enqueueMessage $ Message.ReloadFiles []
     Unmounted -> do
       putStrLn "The watched path was unmounted and hence no longer exists."
     QOverflow -> do
       putStrLn "TODO: The queue overflowed, resend all the files."
     _ -> return ()
   where
+    enqueueMessage :: Message -> IO ()
+    enqueueMessage = atomically . (STM.writeTChan messages)
     fromMaybeFilePath :: Maybe FilePath -> Text
     fromMaybeFilePath = maybe "Unknown file" $ \filename -> "'" `append` pack filename `append` "'"
