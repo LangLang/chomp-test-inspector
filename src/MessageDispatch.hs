@@ -1,5 +1,7 @@
 module MessageDispatch (dispatch) where
 
+-- TODO: Should this be called Scheduler?
+
 -- Standard modules
 import Data.Maybe (isJust)
 import Control.Concurrent.STM (TVar, atomically, tryReadTChan, readTVar, writeTVar)
@@ -11,20 +13,6 @@ import qualified STM.FileStore as STM (FileStore)
 import qualified STM.Messages as STM (Messages)
 import ServerState
 import qualified Handler.StorageHandler as Handler 
-
-processMessage :: Clients -> STM.FileStore -> Message -> IO ()
-processMessage clients fileStore message =
-  case message of
-    -- Server messages
-    ReloadFiles fileInfos -> reloadFiles fileInfos
-    LoadFile fileInfo -> loadFile fileInfo
-    -- Client messages
-    
-    -- Unknown message (error)
-    _ -> undefined
-  where 
-    reloadFiles = Handler.reloadFiles clients fileStore
-    loadFile = Handler.loadFile clients fileStore
 
 -- Dispatches messages from either a client or the server itself to the relevant message handler
 -- Returns false if no messages are available to be processed
@@ -49,3 +37,17 @@ dispatch serverStateT clients fileStore serverMessages clientMessages = do
   case maybeMessage of
     Just message -> (processMessage clients fileStore message) >> return True
     Nothing -> return False
+
+processMessage :: Clients -> STM.FileStore -> Message -> IO ()
+processMessage clients fileStore message =
+  case message of
+    -- Server messages
+    ReloadFiles fileInfos -> reloadFiles fileInfos
+    LoadFile fileInfo -> loadFile fileInfo
+    -- Client messages
+    
+    -- Unknown message (error)
+    _ -> undefined
+  where 
+    reloadFiles = Handler.reloadFiles clients fileStore
+    loadFile = Handler.loadFile clients fileStore
