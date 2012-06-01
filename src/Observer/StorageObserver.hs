@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
-module FileObserver(FileObserver, forkFileObserver, killFileObserver) where
+module Observer.StorageObserver(FileObserver, forkFileObserver, killFileObserver) where
 
 -- Standard modules
 import Prelude hiding (putStrLn)

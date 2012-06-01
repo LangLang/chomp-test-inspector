@@ -12,7 +12,7 @@ import WebApp
 import WebsocketApp
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.FileStore as STM.FileStore
-import FileObserver
+import Observer.StorageObserver
 import qualified STM.Messages as STM (Messages)
 import qualified STM.Messages
 import qualified STM.Clients
@@ -60,6 +60,7 @@ loopDispatch serverStateT clients fileStore serverMessages clientMessages = loop
             then return ()
             else loop
 
+-- Yield to other threads until the server state is terminated 
 waitUntilTerminated :: TVar ServerState -> IO ()
 waitUntilTerminated serverStateT =
   foreverUntilIO yield $ do
@@ -74,18 +75,6 @@ foreverUntilIO loop check = do
   if cond
     then return ()
     else foreverUntilIO loop check
-
-{-
--- A helper that lets us end a thread (or any repeating monad) elegantly (without interupting it)
-foreverUntilT :: forall (m::* -> *) a b. Monad m => TVar Bool ->  IO a -> IO ()  
-foreverUntilT terminate = do
-  finished <- readTVarIO terminate
-  if finished
-    then return ()
-    else do
-      forever
-      foreverUntilT
--}
 
 -- Set up the web application (front controller) with the websocket application (front controller)
 -- and shared resources (the file store and incoming message queues)

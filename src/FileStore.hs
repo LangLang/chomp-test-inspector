@@ -5,6 +5,3 @@ module FileStore (FileInfo) where
 --type FileStore = [FilePath]
 type FileInfo = FilePath
 
-
-
-
