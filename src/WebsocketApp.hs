@@ -83,6 +83,6 @@ listen fileStore messages = do
     catchDisconnect clients e =
       case fromException e of
         Just WS.ConnectionClosed -> liftIO $ do
-          Clients.broadcast clients $ pack $ show $ Notify $ ClientDisconnected "TODO: client identifier"
+          Clients.broadcastMessage clients $ Notify $ ClientDisconnected "TODO: client identifier"
           return ()
         _ -> return ()

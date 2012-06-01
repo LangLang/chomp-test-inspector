@@ -32,14 +32,14 @@ dispatch :: TVar ServerState -> Clients -> STM.FileStore -> STM.Messages -> STM.
 dispatch serverStateT clients fileStore serverMessages clientMessages = do
   -- If there are any messages in the server queue, process them first
   maybeMessage <- atomically $ do
-    message <- tryReadTChan serverMessages
-    if isJust message
-      then return message
+    serverMessage <- tryReadTChan serverMessages
+    if isJust serverMessage
+      then return serverMessage
       else do
         -- If there are messages in the client queue, process them next
-        message <- tryReadTChan clientMessages
-        if isJust message
-          then return message
+        clientMessage <- tryReadTChan clientMessages
+        if isJust clientMessage
+          then return clientMessage
           else do
             serverState <- readTVar serverStateT
             if serverState == Terminating
