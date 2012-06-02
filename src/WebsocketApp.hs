@@ -40,11 +40,12 @@ websocketApp clients fileStore serverMessages clientMessages req = do
   
   -- Obtain a sink to use for sending data in another thread
   sink <- WS.getSink
+  liftIO $ atomically $ TList.append clients ("Client",sink)
   
   -- Listen to incoming messages, adding them to a incomming client message queue
   -- TODO: listen should happen in a loop (probably forkIO'd and given the sink generated above)
   --       See STM.Clients
-  listen fileStore clientMessages
+  listen clients fileStore clientMessages
   
   -- TODO: Add the client information to a list
   -- TODO: forkIO $ processMessages serverMessages clientMessages
@@ -54,9 +55,8 @@ sendMessage message = do
   liftIO $ putStrLn $ "...send " `append` (pack $ show message)
   sendTextData . pack $ show message
 
-listen :: STM.FileStore -> STM.Messages -> WS.WebSockets Hybi10 ()
-listen fileStore messages = do
-  clients <- liftIO $ Clients.newIO
+listen :: Clients -> STM.FileStore -> STM.Messages -> WS.WebSockets Hybi10 ()
+listen clients fileStore messages = do
   (flip WS.catchWsError $ catchDisconnect clients) receive
   return ()
   {-
