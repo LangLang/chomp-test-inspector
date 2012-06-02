@@ -1,5 +1,10 @@
 module Message (Message(..), Notification(..)) where
 
+{- 
+  TODO: Possibly split Message into ServerMessage and ClientMessage or perhaps StorageMessage and
+        EditorMessage. 
+-}
+
 -- Standard modules
 import Data.Text
 

@@ -9,11 +9,13 @@ import qualified STM.FileStore as STM (FileStore)
 
 reloadFiles :: Clients -> STM.FileStore -> [FileInfo] -> IO ()
 reloadFiles clients fileStore fileInfos = do
+  putStrLn "Handler: reloadFiles"
   -- TODO: atomically clear the fileStore and set it to the incoming files
   broadcastMessage clients $ ReloadFiles fileInfos 
 
 loadFile :: Clients -> STM.FileStore -> FileInfo -> IO ()
 loadFile clients fileStore fileInfo = do
+  putStrLn "Handler: loadFile"
   -- TODO: atomically add the file to the fileStore 
   broadcastMessage clients $ LoadFile fileInfo 
-  
+
