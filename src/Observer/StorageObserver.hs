@@ -6,11 +6,10 @@ import Prelude hiding (putStrLn)
 import Data.Text hiding (map, filter)
 import Data.Text.IO (putStrLn, hPutStrLn)
 import Data.String.Utils (endswith)
-import qualified Data.STM.TList as STM (append, appendList)
+import qualified Data.STM.TList as STM (appendList)
 import Control.Monad (liftM)
 --import Control.Monad.Trans (liftIO)
 import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM as STM (writeTChan)
 import System.IO (stderr)
 import System.IO.Error (try, ioeGetErrorType, IOErrorType)
 import qualified System.Directory as Dir
@@ -20,16 +19,15 @@ import qualified GHC.IO.Exception as Exception
 #endif
 
 -- Application modules
-import Message (Message)
-import qualified Message (Message(..))
-import qualified STM.FileStore as STM (FileStore)
-import qualified STM.Messages as STM (Messages)
+import Message
+import STM.FileStore
+import STM.Messages
 
 -- Types
 type FileObserver = INotify
 
 -- Run the asynchronous file observer
-forkFileObserver :: FilePath -> STM.FileStore -> STM.Messages -> IO (Maybe FileObserver)
+forkFileObserver :: FilePath -> FileStore -> Messages -> IO (Maybe FileObserver)
 forkFileObserver watchPath fileStore messages = do 
   filesOrError <- try $ do
     -- Get the initial contents of the directory being watched
@@ -45,7 +43,7 @@ forkFileObserver watchPath fileStore messages = do
     Right _ -> do
       -- Setup inotify to watch the directory
       inotify <- initINotify 
-      _ <- addWatch inotify [Modify, Create, Delete, Move] watchPath $ sourceFileChanged fileStore messages
+      _ <- addWatch inotify [Modify, Create, Delete, Move] watchPath $ inotifyEvent messages
       return $ Just inotify
   where
     isDots f = (endswith "/." f) || (endswith "/.." f) || (f == "..") || (f == ".")
@@ -68,12 +66,9 @@ forkFileObserver watchPath fileStore messages = do
 killFileObserver :: FileObserver -> IO ()
 killFileObserver fileObserver = killINotify fileObserver
 
--- Server actions
---serverLoadFile :: FileInfo -> IO () 
---serverLoadFile fileInfo = atomically $ Messages
-
-sourceFileChanged :: STM.FileStore -> STM.Messages -> Event -> IO ()
-sourceFileChanged fileStore messages e = do
+-- Handle inotify events (on files / directories) 
+inotifyEvent :: Messages -> Event -> IO ()
+inotifyEvent messages e = do
   case e of
     Modified False p -> do
       putStrLn $ (fromMaybeFilePath p) `append` " was modified."
@@ -84,7 +79,7 @@ sourceFileChanged fileStore messages e = do
     MovedSelf _ -> do
       -- Empty the storage
       putStrLn "The watched path was moved and hence no longer exists."
-      enqueueMessage $ Message.ReloadFiles []
+      enqueueMessage messages $ ReloadFiles []
     Created False p -> do
       putStrLn $ "'" `append` pack p `append` "' was created."
       {- TODO: This is now done in the storage handler
@@ -92,20 +87,18 @@ sourceFileChanged fileStore messages e = do
         _ <- STM.append fileStore p
         STM.writeTChan messages $ Message.LoadFile p
       -} 
-      enqueueMessage $ Message.LoadFile p
+      enqueueMessage messages $ LoadFile p
       return ()
     Deleted False p -> do 
       putStrLn $ "'" `append` pack p `append` "' was deleted."
     DeletedSelf -> do
       putStrLn "The watched path was moved and hence no longer exists."
-      enqueueMessage $ Message.ReloadFiles []
+      enqueueMessage messages $ ReloadFiles []
     Unmounted -> do
       putStrLn "The watched path was unmounted and hence no longer exists."
     QOverflow -> do
       putStrLn "TODO: The queue overflowed, resend all the files."
     _ -> return ()
-  where
-    enqueueMessage :: Message -> IO ()
-    enqueueMessage = atomically . (STM.writeTChan messages)
-    fromMaybeFilePath :: Maybe FilePath -> Text
-    fromMaybeFilePath = maybe "Unknown file" $ \filename -> "'" `append` pack filename `append` "'"
+
+fromMaybeFilePath :: Maybe FilePath -> Text
+fromMaybeFilePath = maybe "Unknown file" $ \filename -> "'" `append` pack filename `append` "'"
