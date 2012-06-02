@@ -1,7 +1,7 @@
 module STM.Messages (Messages, newIO, enqueueMessage) where
 
 -- Standard modules
-import Control.Concurrent.STM (atomically, writeTChan)
+import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TChan
 
 -- Application modules
