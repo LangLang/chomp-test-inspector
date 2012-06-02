@@ -70,35 +70,64 @@ killFileObserver fileObserver = killINotify fileObserver
 inotifyEvent :: Messages -> Event -> IO ()
 inotifyEvent messages e = do
   case e of
-    Modified False p -> do
-      putStrLn $ (fromMaybeFilePath p) `append` " was modified."
+    -- A file was modified
+    -- TODO: Load the changes (unless the modification was instigated by us in which case we're already up to date)
+    Modified False maybePath -> do
+      putStrLn $ (fromMaybeFilePath maybePath) `append` " was modified."
+      case maybePath of
+        Just p -> loadModifications p
+        Nothing -> return ()
+    
+    -- A file was moved out of the watch path, so remove it from the file store
     MovedOut False p _ -> do
       putStrLn $ "'" `append` pack p `append` "' was moved out."
+      unloadFile p
+      
+    -- A file was moved into the watch path, so load it into the file store
     MovedIn False p _ -> do
       putStrLn $ "'" `append` pack p `append` "' was moved in." --TODO: use the cookie to check whether the file was actually renamed
-    MovedSelf _ -> do
-      -- Empty the storage
+      loadFile p
+    
+    -- The watch path was moved, so empty the storage
+    MovedSelf _ -> do      
       putStrLn "The watched path was moved and hence no longer exists."
-      enqueueMessage messages $ ReloadFiles []
+      unloadFiles
+      
+    -- A new file was created, load it into the file store 
     Created False p -> do
       putStrLn $ "'" `append` pack p `append` "' was created."
-      {- TODO: This is now done in the storage handler
-      _ <- atomically $ do
-        _ <- STM.append fileStore p
-        STM.writeTChan messages $ Message.LoadFile p
-      -} 
-      enqueueMessage messages $ LoadFile p
-      return ()
+      loadFile p
+     
+    -- A file in the watch path was deleted, so remove it from the file store
     Deleted False p -> do 
       putStrLn $ "'" `append` pack p `append` "' was deleted."
+      unloadFile p
+      
+    -- The watch path was deleted, so remove all files from the file store
     DeletedSelf -> do
       putStrLn "The watched path was moved and hence no longer exists."
-      enqueueMessage messages $ ReloadFiles []
+      unloadFiles
+    
+    -- The watch path was unmounted and is no longer accessible, so remove all files from the file store
     Unmounted -> do
       putStrLn "The watched path was unmounted and hence no longer exists."
+      unloadFiles
+    
+    -- The inotify queue overflowed, remove all files from the file store
+    -- TODO: Try to start from scratch by clearing the queues and reloading all files? 
     QOverflow -> do
-      putStrLn "TODO: The queue overflowed, resend all the files."
+      putStrLn "The queue overflowed, unload all the files."
+      unloadFiles
+      
     _ -> return ()
 
-fromMaybeFilePath :: Maybe FilePath -> Text
-fromMaybeFilePath = maybe "Unknown file" $ \filename -> "'" `append` pack filename `append` "'"
+  where 
+    fromMaybeFilePath :: Maybe FilePath -> Text
+    fromMaybeFilePath = maybe "Unknown file" $ \filename -> "'" `append` pack filename `append` "'"
+    
+    enqueue = enqueueMessage messages    
+    unloadFiles = enqueue $ ReloadFiles []
+    reloadFiles paths = enqueue $ ReloadFiles paths
+    loadFile path = enqueue $ LoadFile path
+    unloadFile path = return () -- TODO
+    loadModifications path = return () :: IO ()-- TODO
