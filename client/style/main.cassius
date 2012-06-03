@@ -35,7 +35,7 @@ a
 a:hover
   color: #e4e4e4
 
-input,textarea,select
+input, textarea, select
   display: inline-block
   width: 210px
   height: 18px
@@ -49,6 +49,12 @@ input,textarea,select
   -webkit-border-radius: 3px
   -moz-border-radius: 3px
   border-radius: 3px
+
+input::selection, input::-moz-selection, input::-webkit-selection
+  background: #b7b7cc
+
+textarea::selection, textarea::-moz-selection, textarea::-webkit-selection
+  background: #b7b7cc
 
 #page-background
   position: relative
@@ -78,9 +84,6 @@ input,textarea,select
   box-sizing: border-box
   padding-top: 14px
   line-height: 26px
-  //color: #b5bd9b
-  //color: rgba(181, 189, 155, 1.0)
-  color: rgba(125, 166, 182, 1.0)
   font-size: small
   background-image: linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
   background-image: -o-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
@@ -124,3 +127,6 @@ input,textarea,select
   padding: 20px
   outline: none
   margin: 4px 0
+
+.supersimple-editor-input::selection, .supersimple-editor-input::-moz-selection, .supersimple-editor-input::-webkit-selection
+  background: #b7b7cc
