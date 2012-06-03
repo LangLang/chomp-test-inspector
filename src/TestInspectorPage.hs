@@ -2,17 +2,26 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE CPP #-} -- to control production versus debug
-
+ 
 module TestInspectorPage (pageHtml) where
 
 -- Standard modules
 import qualified Data.Text.Lazy as LT (concat)
 import qualified Data.ByteString.Lazy as L (ByteString)
-import Text.Hamlet (shamlet)
-import Text.Blaze.Renderer.Utf8 (renderHtml)
-import Text.Julius (JavascriptUrl, renderJavascriptUrl, jsFile, jsFileReload)
-import Text.Cassius (renderCssUrl, cassiusFile, cassiusFileReload)
 import Text.Blaze (preEscapedLazyText)
+import Text.Blaze.Renderer.Utf8 (renderHtml)
+import Text.Hamlet (shamlet)
+import Text.Julius (JavascriptUrl, renderJavascriptUrl)
+import Text.Cassius (CssUrl, renderCssUrl)
+#if PRODUCTION
+import Text.Julius (jsFile)
+import Text.Lucius (luciusFile)
+import Text.Cassius (cassiusFile)
+#else
+import Text.Julius (jsFileReload)
+import Text.Lucius (luciusFileReload)
+import Text.Cassius (cassiusFileReload)
+#endif
 
 -- Html page
 pageHtml :: L.ByteString
@@ -46,6 +55,7 @@ pageHtml = renderHtml [shamlet|
     pageTitle = "Chomp" :: String 
     pageSubTitle = "A brave new LangLang compiler" :: String
 
+jsFiles :: [JavascriptUrl ()]
 #if PRODUCTION
 jsFiles = [
     $(jsFile "client/src/header.js"),
@@ -76,6 +86,7 @@ jsFiles = [
   ]
 #endif
 
+cassiusFiles :: [CssUrl ()]
 #if PRODUCTION
 cassiusFiles = [
     $(cassiusFile "client/style/main.cassius")
