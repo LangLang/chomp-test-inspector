@@ -45,10 +45,22 @@ forkFileObserver watchPath fileStore messages = do
     Right _ -> do
       -- Setup inotify to watch the directory
       inotify <- initINotify 
-      _ <- addWatch inotify [Modify, Create, Delete, Move] watchPath $ inotifyEvent messages
+      _ <- addWatch inotify masks watchPath $ inotifyEvent messages
       return $ Just inotify
   where
     isDots f = (endswith "/." f) || (endswith "/.." f) || (f == "..") || (f == ".")
+    masks = [
+        Modify,
+        Attrib,
+        --CloseWrite, 
+        --CloseNoWrite,
+        Move,
+        MoveSelf, 
+        Create,
+        Delete,
+        DeleteSelf, 
+        OnlyDir
+      ]
     
     -- Generate a message from an IO error  
     generateErrorMessage :: IOErrorType -> Maybe String
@@ -79,6 +91,11 @@ inotifyEvent messages e = do
       case maybePath of
         Just p -> loadModifications p
         Nothing -> return ()
+        
+    -- A file's attributes have changed
+    Attributes False maybePath -> do
+      putStrLn $ "The file '" `append` (fromMaybeFilePath maybePath) `append` "'s attributes has changed."   
+      -- TODO: notify the client if the file has become read-only (then gray out the editor)  
     
     -- A file was moved out of the watch path, so remove it from the file store
     MovedOut False p _ -> do
