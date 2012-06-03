@@ -68,6 +68,7 @@ executable chomp-test-inspector
                   shakespeare -any,
                   shakespeare-js -any,
                   shakespeare-css -any,
+                  shakespeare-text -any,
                   stm -any,
                   stm-tlist -any,
                   text -any,

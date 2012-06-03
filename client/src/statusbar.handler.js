@@ -6,12 +6,13 @@
       MovedRootDirectory: function() {
         $('#page-statusbar')
         .text("The root directory has been moved")
-        .addClass('show-statusbar');
+        .removeClass('flash-info')
+        .addClass('flash-info')
       },
       DeletedRootDirectory: function() {
         $('#page-statusbar')
-        .text("The root directory has been deleted")
-        .addClass('show-statusbar');
+        .removeClass('flash-info')
+        .addClass('flash-info')
       }
     });
 

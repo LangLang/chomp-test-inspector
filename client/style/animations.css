@@ -1,0 +1,35 @@
+@keyframes statusbar-flash-info {
+  from {
+    color: rgba(125, 166, 182, 1.0);
+  }
+  to {
+    color: rgba(125, 166, 182, 1.0);
+  }
+}
+
+@-o-keyframes statusbar-flash-info {
+  from {
+    color: rgba(125, 166, 182, 1.0);
+  }
+  to {
+    color: rgba(125, 166, 182, 1.0);
+  }
+}
+
+@-moz-keyframes statusbar-flash-info {
+  from {
+    color: rgba(125, 166, 182, 1.0);
+  }
+  to {
+    color: rgba(125, 166, 182, 1.0);
+  }
+}
+
+@-webkit-keyframes statusbar-flash-info {
+  from {
+    color: rgba(125, 166, 182, 1.0);
+  }
+  to {
+    color: rgba(125, 166, 182, 1.0);
+  }
+}

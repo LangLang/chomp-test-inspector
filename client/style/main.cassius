@@ -79,18 +79,25 @@ input,textarea,select
   padding-top: 14px
   line-height: 26px
   //color: #b5bd9b
-  color: rgba(181, 189, 155, 0.0)
+  //color: rgba(181, 189, 155, 1.0)
+  color: rgba(125, 166, 182, 1.0)
+  font-size: small
   background-image: linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
   background-image: -o-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
   background-image: -moz-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
   background-image: -webkit-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
   background-image: -ms-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,1.0) 50%)
 
-.show-status
-  color: rgba(181, 189, 155, 0.0)
-  transition-property: color
-  transition-duration: 4s
-  transition-delay: 2s
+#page-statusbar.flash-info
+  animation-duration: 3s
+  animation-name: statusbar-flash-info
+  animation-iteration-count: 1
+  -moz-animation-duration: 3s
+  -moz-animation-name: statusbar-flash-info
+  -moz-animation-iteration-count: 1
+  -webkit-animation-duration: 3s
+  -webkit-animation-name: statusbar-flash-info
+  -webkit-animation-iteration-count: 1
 
 .editor
   position: relative

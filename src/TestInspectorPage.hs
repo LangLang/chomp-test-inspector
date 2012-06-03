@@ -13,14 +13,17 @@ import Text.Blaze.Renderer.Utf8 (renderHtml)
 import Text.Hamlet (shamlet)
 import Text.Julius (JavascriptUrl, renderJavascriptUrl)
 import Text.Cassius (CssUrl, renderCssUrl)
+import Text.Shakespeare.Text (renderTextUrl)
 #if PRODUCTION
 import Text.Julius (jsFile)
-import Text.Lucius (luciusFile)
+--import Text.Lucius (luciusFile)
 import Text.Cassius (cassiusFile)
+import Text.Shakespeare.Text (textFile)
 #else
 import Text.Julius (jsFileReload)
-import Text.Lucius (luciusFileReload)
+--import Text.Lucius (luciusFileReload)
 import Text.Cassius (cassiusFileReload)
+import Text.Shakespeare.Text (textFileReload)
 #endif
 
 -- Html page
@@ -51,7 +54,8 @@ pageHtml = renderHtml [shamlet|
   where
     dummyRouter _ _ = undefined
     js = preEscapedLazyText $ LT.concat $ map (renderJavascriptUrl dummyRouter) jsFiles
-    css = preEscapedLazyText $ LT.concat $ map (renderCssUrl dummyRouter) cassiusFiles
+    css = preEscapedLazyText $ LT.concat $ (map (renderCssUrl dummyRouter) $ cassiusFiles)
+      ++ map (renderTextUrl dummyRouter) cssFiles
     pageTitle = "Chomp" :: String 
     pageSubTitle = "A brave new LangLang compiler" :: String
 
@@ -94,5 +98,17 @@ cassiusFiles = [
 #else
 cassiusFiles = [
     $(cassiusFileReload "client/style/main.cassius")
+  ]
+#endif
+
+-- Neither lucius nor cassius support CSS3 animation @keyframes properly, so text files are needed for this
+--cssFiles :: [TextUrl ()]
+#if PRODUCTION
+cssFiles = [
+    $(textFile "client/style/animations.css")
+  ]
+#else
+cssFiles = [
+    $(textFileReload "client/style/animations.css")
   ]
 #endif
