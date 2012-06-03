@@ -32,12 +32,12 @@ pageHtml = renderHtml [shamlet|
         <script>
           ^{js}
       <body>
-        <h1 .page-title>#{pageTitle}
-        <h2 .page-sub-title>A brave new <a href=http://langlang.org>LangLang</a> compiler
-        <div .page-background>
-          <div .page-background-results>
+        <h1 #page-title>#{pageTitle}
+        <h2 #page-sub-title>A brave new <a href=http://langlang.org>LangLang</a> compiler
+        <div #page-background>
+          <div #page-background-results>
           <div #editors>
-        <footer .page-statusbar>
+        <footer #page-statusbar>
   |]
   where
     dummyRouter _ _ = undefined
@@ -56,6 +56,7 @@ jsFiles = [
     $(jsFile "client/src/message.service.js"),
     $(jsFile "client/src/log.handler.js"),
     $(jsFile "client/src/editor.handler.js"),
+    $(jsFile "client/src/statusbar.handler.js"),
     $(jsFile "client/src/events.init.js"),
     $(jsFile "client/src/footer.js")
   ]
@@ -69,6 +70,7 @@ jsFiles = [
     $(jsFileReload "client/src/message.service.js"),
     $(jsFileReload "client/src/log.handler.js"),
     $(jsFileReload "client/src/editor.handler.js"),
+    $(jsFileReload "client/src/statusbar.handler.js"),
     $(jsFileReload "client/src/events.init.js"),
     $(jsFileReload "client/src/footer.js")
   ]

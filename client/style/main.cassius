@@ -50,12 +50,12 @@ input,textarea,select
   -moz-border-radius: 3px
   border-radius: 3px
 
-.page-background
+#page-background
   position: relative
   width: 100%
   min-height: 100%
 
-.page-background-results
+#page-background-results
   position: absolute
   box-sizing: border-box
   left: 50%
@@ -67,10 +67,10 @@ input,textarea,select
 #editors
   padding: 10px
 
-.page-background-results
+#page-background-results
   min-height: 100%
 
-.page-statusbar
+#page-statusbar
   position: fixed
   bottom: 0
   width: 100%
