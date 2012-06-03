@@ -95,16 +95,16 @@ textarea::selection, textarea::-moz-selection, textarea::-webkit-selection
 
 .status-info
   color: rgba(0,0,0,0.0)
-  -ms-animation-duration: 3s
+  -ms-animation-duration: 2s
   -ms-animation-name: status-info-fade
   -ms-animation-iteration-count: 1
-  -o-animation-duration: 3s
+  -o-animation-duration: 2s
   -o-animation-name: status-info-fade
   -o-animation-iteration-count: 1
-  -moz-animation-duration: 3s
+  -moz-animation-duration: 2s
   -moz-animation-name: status-info-fade
   -moz-animation-iteration-count: 1
-  -webkit-animation-duration: 3s
+  -webkit-animation-duration: 2s
   -webkit-animation-name: status-info-fade
   -webkit-animation-iteration-count: 1
   animation-duration: 2s
@@ -139,3 +139,11 @@ textarea::selection, textarea::-moz-selection, textarea::-webkit-selection
 
 .supersimple-editor-input::selection, .supersimple-editor-input::-moz-selection, .supersimple-editor-input::-webkit-selection
   background: #b7b7cc
+
+.disable-overlay
+  position: fixed
+  top: 0
+  left: 0
+  width: 100%
+  height: 100%
+  background: rgba(80,80,80,0.4)

@@ -1,19 +1,31 @@
   var Editor = Editor || {};
   (function(html){
-    var createEditor = function(fileName) {
-      return html.div({class: "editor"},
-        html.div({class: "editor-source"},
-          html.input({class: "editor-source-filename", value: fileName}),
-          html.editor()
-        ),
-        html.div({class: "editor-result"},
-          html.input({class: "editor-result-filename", readonly: "readonly", value: fileName + ".??? (TODO)"}),
-          html.editor()
-        ),
-        html.div({style: "clear:both"})
-      );
-    };
-    Editor.handler = adt({
+    var 
+      createEditor = function(fileName) {
+        return html.div({class: "editor"},
+          html.div({class: "editor-source"},
+            html.input({class: "editor-source-filename", value: fileName}),
+            html.editor()
+          ),
+          html.div({class: "editor-result"},
+            html.input({class: "editor-result-filename", readonly: "readonly", value: fileName + ".??? (TODO)"}),
+            html.editor()
+          ),
+          html.div({style: "clear:both"})
+        );
+      },
+      enableEditor = function() {
+        $(".disable-overlay").hide();
+      },
+      disableEditor = function() {
+        $(".disable-overlay").show();
+      };
+
+    Editor.handler = adt.recursive(adt({
+      Connected: enableEditor,
+      //RestoreRootDirectory: enableEditor,
+      MovedRootDirectory: disableEditor,
+      DeleteRootDirectory: disableEditor,
       ReloadFiles: function(storageEvent, files) { 
         var i;
         $('#editors').html();
@@ -23,5 +35,5 @@
       LoadFile: function(storageEvent, file) { 
         $('#editors').append(createEditor(file));
       }
-    });
+    }));
   })(adt({ editor: supersimple.editor.html }, html.evalCons));

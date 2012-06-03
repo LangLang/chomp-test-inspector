@@ -49,6 +49,7 @@ pageHtml = renderHtml [shamlet|
         <div #page-background>
           <div #page-background-results>
           <div #editors>
+        <div .disable-overlay>
         <footer #page-statusbar>
   |]
   where
