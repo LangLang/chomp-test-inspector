@@ -20,14 +20,16 @@ import qualified GHC.IO.Exception as Exception
 
 -- Application modules
 import Message
-import STM.FileStore
-import STM.Messages
+import qualified STM.FileStore as STM (FileStore)
+import qualified STM.FileStore hiding (FileStore)
+import qualified STM.Messages as STM (Messages)
+import qualified STM.Messages hiding (Messages)
 
 -- Types
 type FileObserver = INotify
 
 -- Run the asynchronous file observer
-forkFileObserver :: FilePath -> FileStore -> Messages -> IO (Maybe FileObserver)
+forkFileObserver :: FilePath -> STM.FileStore -> STM.Messages -> IO (Maybe FileObserver)
 forkFileObserver watchPath fileStore messages = do 
   filesOrError <- try $ do
     -- Get the initial contents of the directory being watched
@@ -67,7 +69,7 @@ killFileObserver :: FileObserver -> IO ()
 killFileObserver fileObserver = killINotify fileObserver
 
 -- Handle inotify events (on files / directories) 
-inotifyEvent :: Messages -> Event -> IO ()
+inotifyEvent :: STM.Messages -> Event -> IO ()
 inotifyEvent messages e = do
   case e of
     -- A file was modified
@@ -81,53 +83,53 @@ inotifyEvent messages e = do
     -- A file was moved out of the watch path, so remove it from the file store
     MovedOut False p _ -> do
       putStrLn $ "'" `append` pack p `append` "' was moved out."
-      unloadFile p
+      unloadFile MovedOutFile p
       
     -- A file was moved into the watch path, so load it into the file store
     MovedIn False p _ -> do
       putStrLn $ "'" `append` pack p `append` "' was moved in." --TODO: use the cookie to check whether the file was actually renamed
-      loadFile p
+      loadFile MovedInFile p
     
     -- The watch path was moved, so empty the storage
     MovedSelf _ -> do      
       putStrLn "The watched path was moved and hence no longer exists."
-      unloadFiles
+      unloadFiles MovedRootDirectory
       
     -- A new file was created, load it into the file store 
     Created False p -> do
       putStrLn $ "'" `append` pack p `append` "' was created."
-      loadFile p
+      loadFile CreatedFile p
      
     -- A file in the watch path was deleted, so remove it from the file store
     Deleted False p -> do 
       putStrLn $ "'" `append` pack p `append` "' was deleted."
-      unloadFile p
+      unloadFile DeletedFile p
       
     -- The watch path was deleted, so remove all files from the file store
     DeletedSelf -> do
       putStrLn "The watched path was moved and hence no longer exists."
-      unloadFiles
+      unloadFiles DeletedRootDirectory
     
     -- The watch path was unmounted and is no longer accessible, so remove all files from the file store
     Unmounted -> do
       putStrLn "The watched path was unmounted and hence no longer exists."
-      unloadFiles
+      unloadFiles UnmountedRootDirectory 
     
     -- The inotify queue overflowed, remove all files from the file store
     -- TODO: Try to start from scratch by clearing the queues and reloading all files? 
     QOverflow -> do
       putStrLn "The queue overflowed, unload all the files."
-      unloadFiles
-      
+      unloadFiles Error
+    
     _ -> return ()
 
   where 
     fromMaybeFilePath :: Maybe FilePath -> Text
     fromMaybeFilePath = maybe "Unknown file" $ \filename -> "'" `append` pack filename `append` "'"
     
-    enqueue = enqueueMessage messages    
-    unloadFiles = enqueue $ ReloadFiles []
-    reloadFiles paths = enqueue $ ReloadFiles paths
-    loadFile path = enqueue $ LoadFile path
-    unloadFile path = return () -- TODO
+    enqueue = STM.Messages.enqueueMessage messages
+    unloadFiles event = enqueue $ ReloadFiles event []
+    reloadFiles event paths = enqueue $ ReloadFiles event paths
+    loadFile event path = enqueue $ LoadFile event path
+    unloadFile event path = return () -- TODO
     loadModifications path = return () :: IO ()-- TODO

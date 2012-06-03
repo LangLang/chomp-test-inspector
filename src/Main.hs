@@ -12,7 +12,7 @@ import WebApp
 import WebsocketApp
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.FileStore as STM.FileStore
-import Observer.StorageObserver
+import qualified Observer.StorageObserver
 import qualified STM.Messages as STM (Messages)
 import qualified STM.Messages
 import qualified STM.Clients
@@ -29,8 +29,8 @@ main = do
   clientMessages <- STM.Messages.newIO
   serverStateT <- newTVarIO Active :: IO (TVar ServerState)
   -- Run asynchronous observers
-  maybeId <- forkFileObserver watchPath fileStore serverMessages 
-  case maybeId of
+  maybeObserverId <- Observer.StorageObserver.forkFileObserver watchPath fileStore serverMessages 
+  case maybeObserverId of
     Just observerId -> do
       -- Dispatch messages
       _ <- forkIO $ loopDispatch serverStateT clients fileStore serverMessages clientMessages
@@ -40,7 +40,7 @@ main = do
       atomically $ writeTVar serverStateT Terminating
       waitUntilTerminated serverStateT
       -- Stop the asynchronous observers
-      killFileObserver observerId
+      Observer.StorageObserver.killFileObserver observerId
     Nothing ->
       return ()
   where

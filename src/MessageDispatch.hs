@@ -12,7 +12,7 @@ import WebsocketApp (Clients)
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.Messages as STM (Messages)
 import ServerState
-import qualified Handler.StorageHandler as Handler 
+import qualified Handler.StorageHandler
 
 -- Dispatches messages from either a client or the server itself to the relevant message handler
 -- Returns false if no messages are available to be processed
@@ -42,12 +42,12 @@ processMessage :: Clients -> STM.FileStore -> Message -> IO ()
 processMessage clients fileStore message =
   case message of
     -- Server messages
-    ReloadFiles fileInfos -> reloadFiles fileInfos
-    LoadFile fileInfo -> loadFile fileInfo
-    -- Client messages
+    ReloadFiles _ _ -> reloadFiles message
+    LoadFile _ _ -> loadFile message
+    -- Client messages 
     
     -- Unknown message (error)
     _ -> undefined
   where 
-    reloadFiles = Handler.reloadFiles clients fileStore
-    loadFile = Handler.loadFile clients fileStore
+    reloadFiles = Handler.StorageHandler.reloadFiles clients fileStore
+    loadFile = Handler.StorageHandler.loadFile clients fileStore

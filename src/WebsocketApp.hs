@@ -36,7 +36,7 @@ websocketApp clients fileStore serverMessages clientMessages req = do
   --       before the LOAD message is sent to the client. 
   --       The file store should be updated by the message processing queue, not by the FileObserver!
   files <- liftIO $ atomically $ TList.toList fileStore
-  sendMessage $ ReloadFiles files
+  sendMessage $ ReloadFiles Connected files
   
   -- Obtain a sink to use for sending data in another thread
   sink <- WS.getSink
