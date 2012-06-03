@@ -1,19 +1,8 @@
-  var StatusBar = StatusBar || {};
-  
-  (function(){
-  
+  var StatusBar = StatusBar || {};  
+  (function(){  
     var storageEventHandler = adt({
-      MovedRootDirectory: function() {
-        $('#page-statusbar')
-        .text("The root directory has been moved")
-        .removeClass('flash-info')
-        .addClass('flash-info')
-      },
-      DeletedRootDirectory: function() {
-        $('#page-statusbar')
-        .removeClass('flash-info')
-        .addClass('flash-info')
-      }
+      MovedRootDirectory: function() { StatusBar.info("The root directory was moved"); },
+      DeletedRootDirectory:  function() { StatusBar.info("The root directory was deleted"); }
     });
 
     StatusBar.handler = adt({

@@ -1,35 +1,44 @@
-@keyframes statusbar-flash-info {
-  from {
-    color: rgba(125, 166, 182, 1.0);
+@-ms-keyframes status-info-fade {
+  0% {
+    color: rgba(165, 165, 165, 1.0);
   }
-  to {
-    color: rgba(125, 166, 182, 1.0);
-  }
-}
-
-@-o-keyframes statusbar-flash-info {
-  from {
-    color: rgba(125, 166, 182, 1.0);
-  }
-  to {
-    color: rgba(125, 166, 182, 1.0);
+  100% {
+    color: rgba(165, 165, 165, 0.0);
   }
 }
 
-@-moz-keyframes statusbar-flash-info {
-  from {
-    color: rgba(125, 166, 182, 1.0);
+@-o-keyframes status-info-fade {
+  0% {
+    color: rgba(165, 165, 165, 1.0);
   }
-  to {
-    color: rgba(125, 166, 182, 1.0);
+  100% {
+    color: rgba(165, 165, 165, 0.0);
   }
 }
 
-@-webkit-keyframes statusbar-flash-info {
-  from {
-    color: rgba(125, 166, 182, 1.0);
+@-moz-keyframes status-info-fade {
+  0% {
+    color: rgba(165, 165, 165, 1.0);
   }
-  to {
-    color: rgba(125, 166, 182, 1.0);
+  100% {
+    color: rgba(165, 165, 165, 0.0);
+  }
+}
+
+@-webkit-keyframes status-info-fade {
+  0% {
+    color: rgba(165, 165, 165, 1.0);
+  }
+  100% {
+    color: rgba(165, 165, 165, 0.0);
+  }
+}
+
+@keyframes status-info-fade {
+  0% {
+    color: rgba(165, 165, 165, 1.0);
+  }
+  100% {
+    color: rgba(165, 165, 165, 0.0);
   }
 }
