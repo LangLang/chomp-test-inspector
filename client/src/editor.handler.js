@@ -14,13 +14,13 @@
       );
     };
     Editor.handler = adt({
-      ReloadFiles: function(files) { 
+      ReloadFiles: function(storageEvent, files) { 
         var i;
         $('#editors').html();
         for (i = 0; i < files.length; ++i)
           $('#editors').append(createEditor(files[i]));
       },
-      LoadFile: function(file) { 
+      LoadFile: function(storageEvent, file) { 
         $('#editors').append(createEditor(file));
       }
     });
