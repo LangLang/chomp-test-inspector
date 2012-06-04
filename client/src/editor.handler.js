@@ -23,7 +23,7 @@
 
     Editor.handler = adt.recursive(adt({
       Connected: enableEditor,
-      //RestoreRootDirectory: enableEditor,
+      RestoredRootDirectory: enableEditor,
       MovedRootDirectory: disableEditor,
       DeleteRootDirectory: disableEditor,
       UnmountedRootDirectory: disableEditor,

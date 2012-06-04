@@ -13,6 +13,7 @@ import FileStore
 
 data Message = Acknowledge
              | Notify Notification
+             | ReloadWatchPath
              | ReloadFiles StorageEvent [FileInfo]
              | LoadFile StorageEvent FileInfo
              | PatchFile FilePath Patch
@@ -32,7 +33,8 @@ data StorageEvent = Connected
                   | MovedOutDirectory
                   | MovedInDirectory
                   | RenamedDirectory
-                  | MovedRootDirectory
+                  | MovedOutRootDirectory
+                  | RestoredRootDirectory
                   | CreatedFile
                   | CreatedDirectory
                   | DeletedFile

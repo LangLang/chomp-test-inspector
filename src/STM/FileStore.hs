@@ -1,27 +1,54 @@
-module STM.FileStore (FileStore, newIO, fromPaths) where
+module STM.FileStore (FileStore, rootPath, newIO, contents, clear, reload) where
 
 -- Standard modules
 import Control.Monad (liftM)
-import Control.Concurrent.STM (STM)
-import Data.STM.TList (TList, emptyIO)
+import Control.Concurrent.STM (atomically)
+import Data.String.Utils (endswith)
+import Data.STM.TList (TList)
 import qualified Data.STM.TList as TList
+import qualified System.Directory as Dir
 
 -- Application modules
 import FileStore
 
-type FileStore = TList FileInfo
+data FileStore = FileStore {
+    rootPath :: FilePath,
+    files :: TList FileInfo
+  }
 
-newIO :: IO FileStore
-newIO = emptyIO
+-- Create a new file store in a single atomic operation 
+newIO :: FilePath -> IO FileStore
+newIO path = do
+  emptyFiles <- TList.emptyIO 
+  return $ FileStore { rootPath = path, files = emptyFiles }
+  
+-- Get the contents of the file store as a single atomic operation 
+contents :: FileStore -> IO [FileInfo]
+contents fs = atomically $ TList.toList $ files fs
 
-fromPaths :: [FilePath] -> STM FileStore
-fromPaths = liftM fst . TList.fromList
+-- Clear the file store using multiple operations 
+clear :: FileStore -> IO ()
+clear fs = do
+  done <- atomically $ do
+    isEmpty <- TList.null fsFiles 
+    if not isEmpty
+      then TList.drop 1 fsFiles >> return False
+      else return True
+  if done
+    then return ()
+    else clear fs
+  where 
+    fsFiles = files fs
 
---fromPaths :: [FilePath] -> IO FileStore
---fromPaths paths = atomically $ do
-  --list <- TList.empty
-  --foldM (flip TList.cons) list rpaths
-  --return $ liftM fst $
-  --where
-  --  rpaths = reverse paths
-
+-- Reload the file store
+reload :: FileStore -> IO [FileInfo]
+reload fs = do
+  -- Get the initial contents of the directory being watched
+  directoryContents <- (liftM $ filter $ not . isDots) $ Dir.getDirectoryContents fsRootPath
+  _ <- clear fs
+  atomically $ TList.appendList fsFiles directoryContents
+  >>= atomically . TList.toList
+  where
+    isDots f = (endswith "/." f) || (endswith "/.." f) || (f == "..") || (f == ".")
+    fsFiles = files fs
+    fsRootPath = rootPath fs

@@ -48,4 +48,5 @@ send client datum = do
   WS.sendSink (snd client) $ WS.textData datum
   return ()
 
+serialize :: Message -> Text
 serialize = pack . show

@@ -24,12 +24,12 @@ main :: IO ()
 main = do
   -- Instantiate shared resources
   clients <- STM.Clients.newIO
-  fileStore <- STM.FileStore.newIO
+  fileStore <- STM.FileStore.newIO watchPath
   serverMessages <- STM.Messages.newIO
   clientMessages <- STM.Messages.newIO
   serverStateT <- newTVarIO Active :: IO (TVar ServerState)
   -- Run asynchronous observers
-  maybeObserverId <- Observer.StorageObserver.forkFileObserver watchPath fileStore serverMessages 
+  maybeObserverId <- Observer.StorageObserver.forkFileObserver fileStore serverMessages
   case maybeObserverId of
     Just observerId -> do
       -- Dispatch messages

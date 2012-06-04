@@ -5,14 +5,9 @@ module Observer.StorageObserver(FileObserver, forkFileObserver, killFileObserver
 import Prelude hiding (putStrLn)
 import Data.Text hiding (map, filter)
 import Data.Text.IO (putStrLn, hPutStrLn)
-import Data.String.Utils (endswith)
-import qualified Data.STM.TList as STM (appendList)
-import Control.Monad (liftM)
 --import Control.Monad.Trans (liftIO)
-import Control.Concurrent.STM (atomically)
 import System.IO (stderr)
 import System.IO.Error (try, ioeGetErrorType, IOErrorType)
-import qualified System.Directory as Dir
 import System.INotify (INotify, EventVariety(..), Event(..), initINotify, killINotify, addWatch)
 #ifdef __GLASGOW_HASKELL__
 import qualified GHC.IO.Exception as Exception
@@ -20,22 +15,21 @@ import qualified GHC.IO.Exception as Exception
 
 -- Application modules
 import Message
+import qualified STM.FileStore
 import qualified STM.FileStore as STM (FileStore)
-import qualified STM.FileStore hiding (FileStore)
+import qualified STM.Messages
 import qualified STM.Messages as STM (Messages)
-import qualified STM.Messages hiding (Messages)
 
 -- Types
 type FileObserver = INotify
 
 -- Run the asynchronous file observer
-forkFileObserver :: FilePath -> STM.FileStore -> STM.Messages -> IO (Maybe FileObserver)
-forkFileObserver watchPath fileStore messages = do 
-  filesOrError <- try $ do
-    -- Get the initial contents of the directory being watched
-    initialFiles <- (liftM $ filter $ not . isDots) $ Dir.getDirectoryContents watchPath
-    atomically $ STM.appendList fileStore initialFiles
-  case filesOrError of
+forkFileObserver :: STM.FileStore -> STM.Messages -> IO (Maybe FileObserver)
+forkFileObserver fileStore messages = do
+  -- Try to load files in the watch directory
+  errorOrFiles <- try $ STM.FileStore.reload fileStore
+  -- Either fail gracefully if reading the path failed, or start watching the directory
+  case errorOrFiles of
     Left e -> do
       case generateErrorMessage $ ioeGetErrorType e of 
         Just message -> do
@@ -48,7 +42,7 @@ forkFileObserver watchPath fileStore messages = do
       _ <- addWatch inotify masks watchPath $ inotifyEvent messages
       return $ Just inotify
   where
-    isDots f = (endswith "/." f) || (endswith "/.." f) || (f == "..") || (f == ".")
+    watchPath = STM.FileStore.rootPath fileStore
     masks = [
         Modify,
         Attrib,
@@ -108,10 +102,12 @@ inotifyEvent messages e = do
       loadFile MovedInFile p
     
     -- The watch path was moved, so empty the storage
-    MovedSelf _ -> do      
+    MovedSelf _ -> do
+      -- TODO: when the directory is moved here then reloadFiles with RestoredRootDirectory
+      --       hinotify might need to be modified to support this...
       putStrLn "The watched path was moved and hence no longer exists."
-      unloadFiles MovedRootDirectory
-      
+      reloadWatchPath
+    
     -- A new file was created, load it into the file store 
     Created False p -> do
       putStrLn $ "'" `append` pack p `append` "' was created."
@@ -146,7 +142,8 @@ inotifyEvent messages e = do
     
     enqueue = STM.Messages.enqueueMessage messages
     unloadFiles event = enqueue $ ReloadFiles event []
-    reloadFiles event paths = enqueue $ ReloadFiles event paths
+    --reloadFiles event paths = enqueue $ ReloadFiles event paths
+    reloadWatchPath = enqueue ReloadWatchPath
     loadFile event path = enqueue $ LoadFile event path
     unloadFile event path = return () -- TODO
     loadModifications path = return () :: IO ()-- TODO

@@ -16,6 +16,7 @@ import qualified Data.STM.TList as TList
 import Safe (readMay)
 
 -- Application modules
+import qualified STM.FileStore
 import qualified STM.FileStore as STM (FileStore())
 import qualified STM.Clients as STM (Clients)
 import qualified STM.Clients as Clients
@@ -35,12 +36,12 @@ websocketApp clients fileStore serverMessages clientMessages req = do
   -- TODO: There's a synchronization issue here: if a file is loaded it will be added to the file store
   --       before the LOAD message is sent to the client. 
   --       The file store should be updated by the message processing queue, not by the FileObserver!
-  files <- liftIO $ atomically $ TList.toList fileStore
-  sendMessage $ ReloadFiles Connected files
+  files <- liftIO $ STM.FileStore.contents fileStore
+  sendMessage $ ReloadFiles Connected files 
   
   -- Obtain a sink to use for sending data in another thread
   sink <- WS.getSink
-  liftIO $ atomically $ TList.append clients ("Client",sink)
+  _ <- liftIO $ atomically $ TList.append clients ("Client",sink)
   
   -- Listen to incoming messages, adding them to a incomming client message queue
   -- TODO: listen should happen in a loop (probably forkIO'd and given the sink generated above)
@@ -57,15 +58,15 @@ sendMessage message = do
 
 listen :: Clients -> STM.FileStore -> STM.Messages -> WS.WebSockets Hybi10 ()
 listen clients fileStore messages = do
-  (flip WS.catchWsError $ catchDisconnect clients) receive
+  (flip WS.catchWsError $ catchDisconnect clients) receiveMessage
   return ()
   {-
   liftIO $ readMVar state >>= broadcast
     (user `mappend` ": " `mappend` msg)
     talk state client -}
   where
-    receive :: WS.WebSockets Hybi10 ()
-    receive = do
+    receiveMessage :: WS.WebSockets Hybi10 ()
+    receiveMessage = do
       messageString <- WS.receiveData :: WS.WebSockets Hybi10 Text
       liftIO $ do
         putStrLn $ "Message received from client (TODO: lookup client)..."

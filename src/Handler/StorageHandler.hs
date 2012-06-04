@@ -1,19 +1,32 @@
-module Handler.StorageHandler (reloadFiles, loadFile) where
+module Handler.StorageHandler (reloadWatchPath, loadFile) where
+
+-- Standard modules
+import System.IO.Error (try)
 
 -- Application modules
 import Message
-import FileStore
 import WebsocketApp (Clients)
-import STM.Clients hiding (Clients)
+import qualified STM.Clients
 import qualified STM.FileStore as STM (FileStore)
+import qualified STM.FileStore
 
-reloadFiles :: Clients -> STM.FileStore -> Message -> IO ()
-reloadFiles clients fileStore message = do
-  -- TODO: atomically clear the fileStore and set it to the incoming files
-  broadcastMessage clients message 
+reloadWatchPath :: Clients -> STM.FileStore -> IO ()
+reloadWatchPath clients fileStore = do
+  errorOrFiles <- try $ STM.FileStore.reload fileStore
+  STM.Clients.broadcastMessage clients $ case errorOrFiles of
+    Left _ -> ReloadFiles MovedOutRootDirectory []
+    Right files -> ReloadFiles RestoredRootDirectory files
+
+{-
+reloadFiles :: Clients -> STM.FileStore -> StorageEvent -> IO ()
+reloadFiles clients fileStore event = do
+  errorOrFiles <- try $ STM.FileStore.reload fileStore
+  STM.Clients.broadcastMessage clients $ case errorOrFiles of
+    Left _ -> ReloadFiles event []
+    Right files -> ReloadFiles event files
+-}
 
 loadFile :: Clients -> STM.FileStore -> Message -> IO ()
 loadFile clients fileStore message = do
   -- TODO: atomically add the file to the fileStore 
-  broadcastMessage clients message
-
+  STM.Clients.broadcastMessage clients message
