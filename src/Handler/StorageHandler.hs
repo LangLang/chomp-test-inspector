@@ -17,15 +17,6 @@ reloadWatchPath clients fileStore = do
     Left _ -> ReloadFiles MovedOutRootDirectory []
     Right files -> ReloadFiles RestoredRootDirectory files
 
-{-
-reloadFiles :: Clients -> STM.FileStore -> StorageEvent -> IO ()
-reloadFiles clients fileStore event = do
-  errorOrFiles <- try $ STM.FileStore.reload fileStore
-  STM.Clients.broadcastMessage clients $ case errorOrFiles of
-    Left _ -> ReloadFiles event []
-    Right files -> ReloadFiles event files
--}
-
 loadFile :: Clients -> STM.FileStore -> Message -> IO ()
 loadFile clients fileStore message = do
   -- TODO: atomically add the file to the fileStore 

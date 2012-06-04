@@ -43,13 +43,11 @@ processMessage clients fileStore message =
   case message of
     -- Server messages
     ReloadWatchPath -> reloadWatchPath
-    --ReloadFiles event _ -> reloadFiles event
     LoadFile _ _ -> loadFile message
     -- Client messages 
     
     -- Unknown message (error)
     _ -> undefined
   where
-    reloadWatchPath = Handler.StorageHandler.reloadWatchPath clients fileStore 
-    --reloadFiles = Handler.StorageHandler.reloadFiles clients fileStore
+    reloadWatchPath = Handler.StorageHandler.reloadWatchPath clients fileStore
     loadFile = Handler.StorageHandler.loadFile clients fileStore

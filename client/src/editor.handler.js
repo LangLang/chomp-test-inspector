@@ -24,7 +24,7 @@
     Editor.handler = adt.recursive(adt({
       Connected: enableEditor,
       RestoredRootDirectory: enableEditor,
-      MovedRootDirectory: disableEditor,
+      MovedOutRootDirectory: disableEditor,
       DeleteRootDirectory: disableEditor,
       UnmountedRootDirectory: disableEditor,
       ReloadFiles: function(storageEvent, files) { 

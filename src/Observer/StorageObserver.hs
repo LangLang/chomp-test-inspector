@@ -43,18 +43,7 @@ forkFileObserver fileStore messages = do
       return $ Just inotify
   where
     watchPath = STM.FileStore.rootPath fileStore
-    masks = [
-        Modify,
-        Attrib,
-        --CloseWrite, 
-        --CloseNoWrite,
-        Move,
-        MoveSelf, 
-        Create,
-        Delete,
-        DeleteSelf, 
-        OnlyDir
-      ]
+    masks = [ Modify, Attrib, Move, MoveSelf, Create, Delete, DeleteSelf, OnlyDir ]
     
     -- Generate a message from an IO error  
     generateErrorMessage :: IOErrorType -> Maybe String
@@ -89,7 +78,7 @@ inotifyEvent messages e = do
     -- A file's attributes have changed
     Attributes False maybePath -> do
       putStrLn $ "The file '" `append` (fromMaybeFilePath maybePath) `append` "'s attributes has changed."   
-      -- TODO: notify the client if the file has become read-only (then gray out the editor)  
+      -- TODO: notify the client if the file has become read-only (then gray out the editor)
     
     -- A file was moved out of the watch path, so remove it from the file store
     MovedOut False p _ -> do
@@ -103,9 +92,7 @@ inotifyEvent messages e = do
     
     -- The watch path was moved, so empty the storage
     MovedSelf _ -> do
-      -- TODO: when the directory is moved here then reloadFiles with RestoredRootDirectory
-      --       hinotify might need to be modified to support this...
-      putStrLn "The watched path was moved and hence no longer exists."
+      putStrLn "The watched path was moved."
       reloadWatchPath
     
     -- A new file was created, load it into the file store 
@@ -142,7 +129,6 @@ inotifyEvent messages e = do
     
     enqueue = STM.Messages.enqueueMessage messages
     unloadFiles event = enqueue $ ReloadFiles event []
-    --reloadFiles event paths = enqueue $ ReloadFiles event paths
     reloadWatchPath = enqueue ReloadWatchPath
     loadFile event path = enqueue $ LoadFile event path
     unloadFile event path = return () -- TODO
