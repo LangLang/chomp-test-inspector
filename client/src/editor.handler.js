@@ -26,9 +26,10 @@
       //RestoreRootDirectory: enableEditor,
       MovedRootDirectory: disableEditor,
       DeleteRootDirectory: disableEditor,
+      UnmountedRootDirectory: disableEditor,
       ReloadFiles: function(storageEvent, files) { 
         var i;
-        $('#editors').html('');
+        $('#editors').html('' );
         for (i = 0; i < files.length; ++i)
           $('#editors').append(createEditor(files[i]));
       },
