@@ -13,6 +13,7 @@ var supersimple = supersimple || {};
         var 
           code = e.charCode? e.charCode : e.keyCode,
           c = String.fromCharCode(code);
+        // TODO: (issue #1) can't press b/i keys when ctrl combination has been used
         if (e.ctrlKey)
           keys.ctrl = true;
         if (keys.ctrl && (c === 'B' || c === 'I'))
