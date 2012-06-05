@@ -6,6 +6,7 @@ import Prelude hiding (putStrLn)
 import Data.Text hiding (map, filter)
 import Data.Text.IO (putStrLn, hPutStrLn)
 --import Control.Monad.Trans (liftIO)
+import Control.Monad (liftM)
 import System.IO (stderr)
 import System.IO.Error (try, ioeGetErrorType, IOErrorType)
 import System.INotify (INotify, EventVariety(..), Event(..), initINotify, killINotify, addWatch)
@@ -36,14 +37,17 @@ forkFileObserver fileStore messages = do
           hPutStrLn stderr $ pack message
           return Nothing
         Nothing -> ioError e
-    Right _ -> do
-      -- Setup inotify to watch the directory
-      inotify <- initINotify 
-      _ <- addWatch inotify masks watchPath $ inotifyEvent messages
-      return $ Just inotify
+    Right _ -> liftM Just $ runINotify
   where
     watchPath = STM.FileStore.rootPath fileStore
     masks = [ Modify, Attrib, Move, MoveSelf, Create, Delete, DeleteSelf, OnlyDir ]
+    
+    -- Run inotify on the watch directory
+    runINotify :: IO FileObserver
+    runINotify = do
+      inotify <- initINotify 
+      _ <- addWatch inotify masks watchPath $ inotifyEvent messages
+      return inotify
     
     -- Generate a message from an IO error  
     generateErrorMessage :: IOErrorType -> Maybe String
