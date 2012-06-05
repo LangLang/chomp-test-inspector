@@ -110,6 +110,7 @@ inotifyEvent messages e = do
       unloadFile DeletedFile p
       
     -- The watch path was deleted, so remove all files from the file store
+    -- TODO: (BUG) This event does not appear to trigger at the moment. 
     DeletedSelf -> do
       putStrLn "The watched path was moved and hence no longer exists."
       unloadFiles DeletedRootDirectory
