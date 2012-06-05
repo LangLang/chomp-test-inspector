@@ -111,6 +111,9 @@ textarea::selection, textarea::-moz-selection, textarea::-webkit-selection
   animation-name: status-info-fade
   animation-iteration-count: 1
 
+.status-important
+  color: rgb(165, 165, 165)
+
 .editor
   position: relative
   width: 100%
