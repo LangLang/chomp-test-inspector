@@ -33,9 +33,8 @@ websocketApp clients fileStore serverMessages clientMessages req = do
   liftIO $ putStrLn $ "Client connected (TODO: lookup client)..."
 
   -- Send the list of files currently in the file store to the client application
-  -- TODO: There's a synchronization issue here: if a file is loaded it will be added to the file store
-  --       before the LOAD message is sent to the client. 
-  --       The file store should be updated by the message processing queue, not by the FileObserver!
+  -- TODO: Read an "active" flag from the file store.
+  --       If the file store is not active, then send ReloadFiles LostRootDirectory or similar instead
   files <- liftIO $ STM.FileStore.contents fileStore
   sendMessage $ ReloadFiles Connected files 
   
