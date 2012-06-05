@@ -35,14 +35,14 @@ dispatch serverStateT clients fileStore serverMessages clientMessages = do
               else return Nothing
   -- Process the message, dispatching it to the relevant handler
   case maybeMessage of
-    Just message -> (processMessage clients fileStore message) >> return True
+    Just message -> (processMessage clients fileStore clientMessages message) >> return True
     Nothing -> return False
 
-processMessage :: Clients -> STM.FileStore -> Message -> IO ()
-processMessage clients fileStore message =
+processMessage :: Clients -> STM.FileStore -> STM.Messages -> Message -> IO ()
+processMessage clients fileStore clientMessages message =
   case message of
     -- Server messages
-    ReloadWatchPath -> reloadWatchPath
+    ReloadWatchPath -> reloadWatchPath clientMessages
     LoadFile _ _ -> loadFile message
     -- Client messages 
     
