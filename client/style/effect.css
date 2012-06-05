@@ -1,0 +1,20 @@
+/* Special effects (these are hard to write in Cassius) */
+.disable-overlay {
+    background:
+    -ms-radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 0 0,
+    -ms-radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 3px 3px;
+  background:
+    -o-radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 0 0,
+    -o-radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 3px 3px;
+  background:
+    -moz-radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 0 0,
+    -moz-radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 3px 3px;
+  background:
+    -webkit-radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 0 0,
+    -webkit-radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 3px 3px;
+  background:
+    radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 0 0,
+    radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 3px 3px;
+  background-color: rgba(80,80,80,0.4);
+  background-size: 6px 6px;
+}​

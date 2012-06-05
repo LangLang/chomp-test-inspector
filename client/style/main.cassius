@@ -146,4 +146,3 @@ textarea::selection, textarea::-moz-selection, textarea::-webkit-selection
   left: 0
   width: 100%
   height: 100%
-  background: rgba(80,80,80,0.4)

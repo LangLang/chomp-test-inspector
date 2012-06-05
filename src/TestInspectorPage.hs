@@ -108,10 +108,12 @@ cassiusFiles = [
 --cssFiles :: [TextUrl ()]
 #if PRODUCTION
 cssFiles = [
+    $(textFile "client/style/effect.css"),
     $(textFile "client/style/animations.css")
   ]
 #else
 cssFiles = [
+    $(textFileReload "client/style/effect.css"),
     $(textFileReload "client/style/animations.css")
   ]
 #endif
