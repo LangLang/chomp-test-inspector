@@ -46,7 +46,7 @@ pageHtml = renderHtml [shamlet|
       <body>
         <header #page-head>
           <h1 #page-title>#{pageTitle}
-          <h2 #page-sub-title>A brave new <a href=http://langlang.org>LangLang</a> compiler
+          <h2 #page-sub-title>A brave new <a href=http://lang-lang.org>LangLang</a> compiler
         <div #page-background>
           <div #page-background-results>
           <div #editors>
