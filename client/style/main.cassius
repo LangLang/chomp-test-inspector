@@ -18,25 +18,24 @@ h1,h2,footer
 
 h1
   margin: 0.1em
-  color: #666
-  font-size: 56px
+  color: #606060
+  font-size: 52px
   text-shadow: 1px 1px 5px #000, -1px -1px 1px #fff
 
 h2
   position: relative
-  z-index: 1
-  top: -70px
-  margin: 0 0 -100px 0
-  padding: 60px 0 40px 0
-  background-image: -ms-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,0.7) 50%, rgba(39,40,34,1.0) 70%, rgba(39,40,34,0.0) 100%)
-  background-image: -o-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,0.7) 50%, rgba(39,40,34,1.0) 70%, rgba(39,40,34,0.0) 100%)
-  background-image: -moz-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,0.7) 50%, rgba(39,40,34,1.0) 70%, rgba(39,40,34,0.0) 100%)
-  background-image: -webkit-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,0.7) 50%, rgba(39,40,34,1.0) 70%, rgba(39,40,34,0.0) 100%)
-  background-image: linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,0.7) 50%, rgba(39,40,34,1.0) 70%, rgba(39,40,34,0.0) 100%)
+  z-index: 2
+  margin: -70px 0 0 0
+  padding: 60px 0 0 0
+  background-image: -ms-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,0.7) 50%, rgba(39,40,34,0.7) 85%, rgba(39,40,34,0.0) 86%)
+  background-image: -o-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,0.7) 50%, rgba(39,40,34,0.7) 85%, rgba(39,40,34,0.0) 86%)
+  background-image: -moz-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,0.7) 50%, rgba(39,40,34,0.7) 85%, rgba(39,40,34,0.0) 86%)
+  background-image: -webkit-linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,0.7) 50%, rgba(39,40,34,0.7) 85%, rgba(39,40,34,0.0) 86%)
+  background-image: linear-gradient(top, rgba(39,40,34,0.0) 0%, rgba(39,40,34,0.7) 50%, rgba(39,40,34,0.7) 85%, rgba(39,40,34,0.0) 86%)
   color: #666
   text-shadow: 0 0 3px #000
   font-weight: normal
-  font-size: 16px
+  font-size: 15px
 
 a
   color: #888
@@ -83,10 +82,22 @@ textarea::selection, textarea::-moz-selection, textarea::-webkit-selection
   border-left: solid 2px #222
 
 #editors
-  padding: 10px
+  padding: 120px 10px 40px 10px
 
 #page-background-results
   min-height: 100%
+
+#page-head
+  position: absolute
+  top: 0
+  width: 100%
+  height: 105px
+  z-index: 1
+  background-image: -ms-linear-gradient(top, rgba(39,40,34,1.0) 80%, rgba(39,40,34,0.0) 100%)
+  background-image: -o-linear-gradient(top, rgba(39,40,34,1.0) 80%, rgba(39,40,34,0.0) 100%)
+  background-image: -moz-linear-gradient(top, rgba(39,40,34,1.0) 80%, rgba(39,40,34,0.0) 100%)
+  background-image: -webkit-linear-gradient(top, rgba(39,40,34,1.0) 80%, rgba(39,40,34,0.0) 100%)
+  background-image: linear-gradient(top, rgba(39,40,34,1.0) 80%, rgba(39,40,34,0.0) 100%)
 
 #page-statusbar
   position: fixed
