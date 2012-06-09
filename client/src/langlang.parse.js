@@ -106,6 +106,7 @@
         '_': '_'*/
       }),
       astReduce = function(farLeft, left, right) {
+        // TODO: refactor (use variable number of arguments)
         if (left == null)
           return [right];
         var
@@ -136,10 +137,19 @@
           return;
         var 
           left = astResult.length > 0? astResult.pop() : (void 0),
-          farLeft = astResult.length > 0? astResult.pop() : (void 0),
-          right = astReplace(lexeme);
+          right = astReplace(lexeme),
+          farLeft,
+          r;
         // Run astReduce on up to three arguments (i.e. maximum lookahead of 2)
-        astResult = astResult.concat(astReduce(farLeft, left, right));
+        // Try to reduce 2
+        // TODO: refactor (undefined is unnecessary)
+        r = astReduce((void 0), left, right);
+        // Try to reduce 3
+        if (r.length > 1) {
+          farLeft = astResult.length > 0? astResult.pop() : (void 0);
+          r = astReduce(farLeft, left, right);
+        }
+        astResult = astResult.concat(r);
       };
 
       for (i = 0; i < str.length; ++i) {
