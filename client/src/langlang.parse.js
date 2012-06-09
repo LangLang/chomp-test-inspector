@@ -45,6 +45,7 @@
       // TODO: pragma
       astCons = adt('space', 'eol', 'error', 'lbracket', 'rbracket', 'comment', 'arrow', 'operator', 'def', 'expr', 'identifier', 'top', 'bottom'),
       astReplace = function(lexeme) {
+        // Pre-condition: lexeme.length > 0
         var 
           astReplaceHash = {
             ' ': astCons.space(' '),
@@ -66,7 +67,7 @@
           },
           result = astReplaceHash[lexeme];
         if (result)
-          return [result];
+          return result;
         return astCons.identifier(lexeme);
       },
       astReduceEval = adt({
@@ -102,12 +103,11 @@
         var
           generateTag = adt({_: function(){ return this._tag; }}),
           leftTag = generateTag(left),
-          generateTag = generateTag(right),
+          rightTag = generateTag(right),
           result = astReduceEval[leftTag + ' ' + rightTag];
         return result? [result(left, right)] : [left, right];
         //'token→': '→',
-        //'function→': '→',
-
+        //'function→': '→',s
       };
       
     LangLang.parse = function(str) {
@@ -122,11 +122,13 @@
         left, right;
 
       var parse = function(lexeme) {
+        if (lexeme == null || lexeme.length == 0)
+          return;
         var 
           left = astResult.length > 1? astResult.pop() : (void 0),
           right = astReplace(lexeme);
         // TODO: run astReduce on multiple arguments
-        astResult = astReduce(left, right);
+        astResult = astResult.concat(astReduce(left, right));
       };
 
       for (i = 0; i < str.length; ++i) {
@@ -135,12 +137,12 @@
           lexHead = lexResult.pop();
           lexResult = lexResult.concat(lexReduce(lexHead, lexeme[j]));
         }
-        while (lexResult.length > 2)
-          parse(lexResult.pop());
+        while (lexResult.length > 1)
+          parse(lexResult.shift());
       }
       if (lexResult.length == 1)
-        parse(lexResult.pop());
-      return [astResult];
+        parse(lexResult.shift());
+      return astResult;
     };
 
   })();
