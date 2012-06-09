@@ -55,6 +55,7 @@
             ':': astCons.operator(':'),
             '\\': astCons.operator('\\'),
             '\\\\': astCons.operator('\\\\'),
+            '→': astCons.arrow('→'),
             '→.': astCons.arrow('→.'),
             '→:': astCons.arrow('→:'),
             '→\\': astCons.arrow('→\\'),
@@ -71,14 +72,21 @@
         return astCons.identifier(lexeme);
       },
       astReduceEval = adt({
-        'whitespace whitespace': function(l,r) {
-          return [astCons.whitespace(l[0]+r[0])]; 
+        'identifier space arrow': function(a,b,c) {
+          return astCons.def(a,b,c);
         },
-        'comment identifier': function(comment, identifier) { 
-          if (comment[comment.length-1] == '\n')
-            return [astCons.comment(comment), astCons.token(token)];
-          return astCons.comment(comment + token);
+        'def space identifier': function(a,b,c) {
+          return astCons.def.apply(null, a.concat([b,c])); 
         },
+        'def space top': function(fl,l,r) {
+          return astCons.def.apply(null, a.concat([b,c])); 
+        },
+        'def space bottom': function(fl,l,r) {
+          return astCons.def.apply(null, a.concat([b,c])); 
+        },
+        'def space error': function(fl,l,r) {
+          return astCons.def.apply(null, a.concat([b,c])); 
+        }
         /*'identifier identifier': function() {
 
         },
@@ -97,15 +105,17 @@
         '→\\\\': '→\\\\',
         '_': '_'*/
       }),
-      astReduce = function(left, right) {
+      astReduce = function(farLeft, left, right) {
         if (left == null)
           return [right];
         var
           generateTag = adt({_: function(){ return this._tag; }}),
           leftTag = generateTag(left),
+          farLeftTag = farLeft? generateTag(farLeft) : "",
           rightTag = generateTag(right),
-          result = astReduceEval[leftTag + ' ' + rightTag];
-        return result? [result(left, right)] : [left, right];
+          result = astReduceEval[farLeftTag + ' ' + leftTag + ' ' + rightTag],
+          resultArgs = farLeft? [farLeft, left, right] : [left, right];
+        return result? [result.apply(null, resultArgs)] : resultArgs;
         //'token→': '→',
         //'function→': '→',s
       };
@@ -125,10 +135,11 @@
         if (lexeme == null || lexeme.length == 0)
           return;
         var 
-          left = astResult.length > 1? astResult.pop() : (void 0),
+          left = astResult.length > 0? astResult.pop() : (void 0),
+          farLeft = astResult.length > 0? astResult.pop() : (void 0),
           right = astReplace(lexeme);
-        // TODO: run astReduce on multiple arguments
-        astResult = astResult.concat(astReduce(left, right));
+        // Run astReduce on up to three arguments (i.e. maximum lookahead of 2)
+        astResult = astResult.concat(astReduce(farLeft, left, right));
       };
 
       for (i = 0; i < str.length; ++i) {
