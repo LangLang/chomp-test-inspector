@@ -13,4 +13,4 @@
         result.push(highlighter(ast[i]));
       return result;
     };
-  })(html.cons);
+  })(html.evalCons);
