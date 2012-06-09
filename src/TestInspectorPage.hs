@@ -13,7 +13,7 @@ import Text.Blaze.Renderer.Utf8 (renderHtml)
 import Text.Hamlet (shamlet)
 import Text.Julius (JavascriptUrl, renderJavascriptUrl)
 import Text.Cassius (CssUrl, renderCssUrl)
-import Text.Shakespeare.Text (renderTextUrl)
+import Text.Shakespeare.Text (TextUrl, renderTextUrl)
 #if PRODUCTION
 import Text.Julius (jsFile)
 --import Text.Lucius (luciusFile)
@@ -68,6 +68,7 @@ jsFiles = [
     $(jsFile "client/src/core.js"),
     $(jsFile "client/src/state.js"),
     $(jsFile "client/src/langlang.parse.js"),
+    $(jsFile "client/src/langlang.highlight.js"),
     $(jsFile "client/src/editor.highlight.js"),
     $(jsFile "client/src/statusbar.message.js"),
     $(jsFile "client/src/websocket.service.js"),
@@ -86,6 +87,7 @@ jsFiles = [
     $(jsFileReload "client/src/core.js"),
     $(jsFileReload "client/src/state.js"),
     $(jsFileReload "client/src/langlang.parse.js"),
+    $(jsFileReload "client/src/langlang.highlight.js"),
     $(jsFileReload "client/src/editor.highlight.js"),
     $(jsFileReload "client/src/statusbar.message.js"),
     $(jsFileReload "client/src/websocket.service.js"),
@@ -112,7 +114,7 @@ cassiusFiles = [
 #endif
 
 -- Neither lucius nor cassius support CSS3 animation @keyframes properly, so text files are needed for this
---cssFiles :: [TextUrl ()]
+cssFiles :: [TextUrl ()]
 #if PRODUCTION
 cssFiles = [
     $(textFile "client/style/effect.css"),

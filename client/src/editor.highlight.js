@@ -2,7 +2,7 @@
   (function(html){
     var processElement = adt({
       Text: function(el) {
-        var ast = LangLang.parse(el.data);
+        var ast = LangLang.highlight(el.data);
         console.log("LangLang AST: ", ast);
       },
       _: function(attributes) { console.log("Unknown DOM element ", this._tag, this._datatype, attributes); }
