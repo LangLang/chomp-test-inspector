@@ -32,6 +32,6 @@ pageApp req = do
   --body <- requestBody req
   return $ W.responseLBS
     status200
-    [("Content-Type", "text/html")]
+    [("Content-Type", "text/html;charset=utf-8")]
     $ pageHtml
 
