@@ -63,12 +63,12 @@
 
     Editor.highlight = function(domElement) {
       var 
-        result = LangLang.highlight(domElement.textContent),
-        i,
-        caretOffset = getCaretOffset(domElement);
+        originalCaretPos = getCaretOffset(domElement),
+        result = LangLang.highlight(domElement.textContent, originalCaretPos),
+        i;
       domElement.innerHTML = "";
-      for (var i = 0; i < result.length; ++i)
-        domElement.appendChild(result[i]);
-      setCaretOffset(domElement, caretOffset);
+      for (var i = 0; i < result.html.length; ++i)
+        domElement.appendChild(result.html[i]);
+      setCaretOffset(domElement, result.caretPos);
     };
   })(html.evalCons);

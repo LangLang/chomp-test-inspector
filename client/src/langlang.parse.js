@@ -120,12 +120,14 @@
         //'token→': '→',
         //'function→': '→',s
       };
-      
-    LangLang.parse = function(str) {
-      var 
+    
+    LangLang.parse = function(str, caretPos) {
+      var
         lexResult = [""], 
         lexHead,
         lexeme,
+        lexPos,
+        lexReduction,
         //astStack = [],
         astResult = [], 
         astHead,
@@ -152,18 +154,35 @@
         astResult = astResult.concat(r);
       };
 
+      var updateCaretPos = function(inputLength, reducedLength) {
+        var offset = reducedLength - inputLength;
+        // Subtract the reduction in length from both the caret and the lex position
+        if (lexPos <= caretPos)
+          caretPos += offset;
+        lexPos += offset;
+      };
+
+      lexPos = 0;
       for (i = 0; i < str.length; ++i) {
+        // Update the lex position from the input
+        lexPos += 1;
+        // Replace simple characters in the input stream (producing tiny "lexemes" - mostly characters)
         lexeme = lexReplace(str[i]);
+        updateCaretPos(1, lexeme.length);
+        // Reduce combinations of lexemes into new lexemes
         for (j = 0; j < lexeme.length; ++j) {
           lexHead = lexResult.pop();
-          lexResult = lexResult.concat(lexReduce(lexHead, lexeme[j]));
+          lexReduction = lexReduce(lexHead, lexeme[j]);
+          lexResult = lexResult.concat(lexReduction);
+          updateCaretPos(lexHead.length + lexeme[j].length, lexReduction.join('').length);
         }
+        // Parse (stream) lexical tokens into a syntax tree
         while (lexResult.length > 1)
           parse(lexResult.shift());
       }
       if (lexResult.length == 1)
         parse(lexResult.shift());
-      return astResult;
+      return { ast: astResult, caretPos: caretPos };
     };
 
   })();

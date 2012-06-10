@@ -4,13 +4,13 @@
       identifier: html.strong,
       _: html.span
     }));
-    LangLang.highlight = function(str) {
+    LangLang.highlight = function(str, caretPos) {
       var 
-        ast = LangLang.parse(str),
-        i, 
-        result = [];
-      for (i = 0; i < ast.length; ++i)
-        result.push(highlighter(ast[i]));
-      return result;
+        parseResult = LangLang.parse(str, caretPos),
+        highlightResult = { html: [], caretPos: parseResult.caretPos },
+        i;
+      for (i = 0; i < parseResult.ast.length; ++i)
+        highlightResult.html.push(highlighter(parseResult.ast[i]));
+      return highlightResult;
     };
   })(html.evalCons);
