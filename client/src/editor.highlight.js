@@ -14,7 +14,14 @@
           ++offset;
         if (!prevNode)
           return offset;
-        return offset + getTextContent(prevNode).length + getNodeOffset(prevNode);
+        // The previous node may contain a <br> tag if it is completely empty...
+        // Therefore, it is not possible to use getTextContent here because it
+        // will add a second newline to the counter in this case.
+        // TODO: This may still be broken when pasting text into the editor...
+        //       because it assumes that the <br> element is followed by a <div>
+        //       element.
+        //return offset + getTextContent(prevNode).length + getNodeOffset(prevNode);        
+        return offset + prevNode.textContent.length + getNodeOffset(prevNode);
       },
       getParentNodeOffset = function(parentNode, childNode) {
         var offset = getNodeOffset(childNode);
