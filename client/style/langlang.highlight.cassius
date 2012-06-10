@@ -1,0 +1,17 @@
+.syntax-arrow
+  color: #fff
+
+.syntax-operator
+  color: #888
+
+//.syntax-expr .syntax-identifier
+//  color: #fca
+
+.syntax-identifier
+  color: #ddd
+
+.syntax-bottom, .syntax-top
+  color: #99f
+
+//.syntax-expr:hover
+//  background: #888

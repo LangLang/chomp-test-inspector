@@ -106,11 +106,13 @@ jsFiles = [
 cassiusFiles :: [CssUrl ()]
 #if PRODUCTION
 cassiusFiles = [
-    $(cassiusFile "client/style/main.cassius")
+    $(cassiusFile "client/style/main.cassius"),
+    $(cassiusFile "client/style/langlang.highlight.cassius")
   ]
 #else
 cassiusFiles = [
-    $(cassiusFileReload "client/style/main.cassius")
+    $(cassiusFileReload "client/style/main.cassius"),
+    $(cassiusFileReload "client/style/langlang.highlight.cassius")
   ]
 #endif
 
