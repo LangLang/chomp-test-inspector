@@ -1,4 +1,4 @@
-module STM.FileStore (FileStore, rootPath, newIO, contents, clear, reload) where
+module STM.FileStore (FileStore, rootPath, newIO, contents, clear, reload, load) where
 
 -- Standard modules
 import Control.Monad (liftM, (<=<))
@@ -51,3 +51,11 @@ reload fs = do
     isDots f = (endswith "/." f) || (endswith "/.." f) || (f == "..") || (f == ".")
     fsFiles = files fs
     fsRootPath = rootPath fs
+    
+-- Load a single file into the file store
+load :: FileStore -> FileInfo -> IO ()
+load fs f = 
+  atomically $ (flip TList.append f <=< readTVar) fsFiles 
+  >> return ()
+  where
+    fsFiles = files fs

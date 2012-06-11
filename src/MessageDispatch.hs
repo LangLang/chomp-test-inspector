@@ -43,7 +43,7 @@ processMessage clients fileStore message =
   case message of
     -- Server messages
     ReloadWatchPath -> reloadWatchPath
-    LoadFile _ _ -> loadFile message
+    LoadFile storageEvent fileInfo -> loadFile storageEvent fileInfo
     -- Client messages 
     
     -- Unknown message (error)

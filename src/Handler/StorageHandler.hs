@@ -6,6 +6,7 @@ import System.IO.Error (try)
 -- Application modules
 import Message
 import WebsocketApp (Clients)
+import FileStore
 import qualified STM.Clients
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.FileStore
@@ -17,7 +18,7 @@ reloadWatchPath clients fileStore = do
     Left _ -> ReloadFiles MovedOutRootDirectory []
     Right files -> ReloadFiles RestoredRootDirectory files
 
-loadFile :: Clients -> STM.FileStore -> Message -> IO ()
-loadFile clients fileStore message = do
-  -- TODO: atomically add the file to the fileStore 
-  STM.Clients.broadcastMessage clients message
+loadFile :: Clients -> STM.FileStore -> StorageEvent -> FileInfo -> IO ()
+loadFile clients fileStore event file =
+  STM.FileStore.load fileStore file 
+  >> (STM.Clients.broadcastMessage clients $ LoadFile event file)
