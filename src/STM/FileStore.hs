@@ -1,4 +1,4 @@
-module STM.FileStore (FileStore, rootPath, newIO, contents, clear, reload, load) where
+module STM.FileStore (FileStore, rootPath, newIO, contents, clear, reload, load, unload) where
 
 -- Standard modules
 import Control.Monad (liftM, (<=<))
@@ -59,3 +59,12 @@ load fs f =
   >> return ()
   where
     fsFiles = files fs
+
+-- Remove the file from the file store
+unload :: FileStore -> FileInfo -> IO ()
+unload fs f = 
+  atomically $ (flip TList.append f <=< readTVar) fsFiles 
+  >> return ()
+  where
+    fsFiles = files fs
+

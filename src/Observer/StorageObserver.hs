@@ -136,5 +136,5 @@ inotifyEvent messages e = do
     unloadFiles event = enqueue $ ReloadFiles event []
     reloadWatchPath = enqueue ReloadWatchPath
     loadFile event path = enqueue $ LoadFile event path
-    unloadFile event path = return () -- TODO
+    unloadFile event path = enqueue $ UnloadFile event path
     loadModifications path = return () :: IO ()-- TODO

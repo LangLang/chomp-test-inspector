@@ -3,7 +3,7 @@ module STM.Messages (Messages, newIO, enqueueMessage) where
 -- Standard modules
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TChan
-import Control.Monad (unless)
+--import Control.Monad (unless)
 
 -- Application modules
 import Message

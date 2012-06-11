@@ -1,4 +1,4 @@
-module Handler.StorageHandler (reloadWatchPath, loadFile) where
+module Handler.StorageHandler (reloadWatchPath, loadFile, unloadFile) where
 
 -- Standard modules
 import System.IO.Error (try)
@@ -22,3 +22,8 @@ loadFile :: Clients -> STM.FileStore -> StorageEvent -> FileInfo -> IO ()
 loadFile clients fileStore event file =
   STM.FileStore.load fileStore file 
   >> (STM.Clients.broadcastMessage clients $ LoadFile event file)
+  
+unloadFile :: Clients -> STM.FileStore -> StorageEvent -> FileInfo -> IO ()
+unloadFile clients fileStore event file =
+  STM.FileStore.unload fileStore file
+  >> (STM.Clients.broadcastMessage clients $ UnloadFile event file)

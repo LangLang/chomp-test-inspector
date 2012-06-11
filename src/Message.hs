@@ -16,6 +16,7 @@ data Message = Acknowledge
              | ReloadWatchPath
              | ReloadFiles StorageEvent [FileInfo]
              | LoadFile StorageEvent FileInfo
+             | UnloadFile StorageEvent FileInfo
              | PatchFile FilePath Patch
              | ParseError String
   deriving (Show, Read)

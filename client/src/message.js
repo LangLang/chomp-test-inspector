@@ -1,5 +1,5 @@
   var 
-    Message = adt('Acknowledge','Notify','ReloadFiles','LoadFile','PatchFile','ParseError'),
+    Message = adt('Acknowledge','Notify','ReloadFiles','LoadFile','UnloadFile','PatchFile','ParseError'),
     // Not used: ReloadWatchPath
     StorageEvent = adt(
       'Connected',

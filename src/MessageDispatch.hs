@@ -44,6 +44,7 @@ processMessage clients fileStore message =
     -- Server messages
     ReloadWatchPath -> reloadWatchPath
     LoadFile storageEvent fileInfo -> loadFile storageEvent fileInfo
+    UnloadFile storageEvent fileInfo -> unloadFile storageEvent fileInfo
     -- Client messages 
     
     -- Unknown message (error)
@@ -51,3 +52,4 @@ processMessage clients fileStore message =
   where
     reloadWatchPath = Handler.StorageHandler.reloadWatchPath clients fileStore
     loadFile = Handler.StorageHandler.loadFile clients fileStore
+    unloadFile = Handler.StorageHandler.unloadFile clients fileStore

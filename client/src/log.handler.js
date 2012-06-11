@@ -13,6 +13,9 @@
       LoadFile: function(storageEvent, file) { 
         console.log("...load file (" + show(storageEvent) + "): ", file);
       },
+      UnloadFile: function(storageEvent, file) {
+        console.log("...unload file (" + show(storageEvent) + "): ", file);
+      },
       PatchFile: function(filePath, patch) {
         console.log("...apply patch to file: ", file);
         console.log("...patch: ", patch);

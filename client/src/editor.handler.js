@@ -34,7 +34,17 @@
           $('#editors').append(createEditor(files[i]));
       },
       LoadFile: function(storageEvent, file) { 
+        $('#editors')
+          .find(".editor-source-filename[value='" + file + "']")
+          .closest('.editor')
+          .remove();
         $('#editors').append(createEditor(file));
+      },
+      UnloadFile: function(storageEvent, file) { 
+        $('#editors')
+          .find(".editor-source-filename[value='" + file + "']")
+          .closest('.editor')
+          .remove();
       }
     }));
   })(adt({ editor: supersimple.editor.html }, html.evalCons));
