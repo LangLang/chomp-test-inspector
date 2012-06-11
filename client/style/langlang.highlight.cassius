@@ -1,8 +1,9 @@
 .syntax-arrow
-  color: #fff
+  color: #fd971f
 
 .syntax-operator
   color: #888
+  font-weight: bolder
 
 //.syntax-expr .syntax-identifier
 //  color: #fca
@@ -12,6 +13,16 @@
 
 .syntax-bottom, .syntax-top
   color: #99f
+
+.syntax-error
+  color: #fff
+  background: rgba(221,51,51,1.0)
+  border-radius: 10px
+  padding: 0 4px
+  margin: 0 -4px
+
+.syntax-comment
+  color: #666
 
 //.syntax-expr:hover
 //  background: #888
