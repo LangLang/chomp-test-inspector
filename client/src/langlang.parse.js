@@ -109,6 +109,13 @@
         // TODO: refactor (use variable number of arguments)
         if (left == null)
           return [right];
+
+        // Reduce comments first
+        // TODO: This should be done by pattern matching instead in the future...
+        if (left._tag === 'comment' && right._tag !== 'eol')
+          return [astCons.comment(left.concat(right).join(''))];
+
+        // Reduce all other ast combinations
         var
           generateTag = adt({_: function(){ return this._tag; }}),
           leftTag = generateTag(left),
@@ -117,8 +124,6 @@
           result = astReduceEval[farLeftTag + ' ' + leftTag + ' ' + rightTag],
           resultArgs = farLeft? [farLeft, left, right] : [left, right];
         return result? [result.apply(null, resultArgs)] : resultArgs;
-        //'token→': '→',
-        //'function→': '→',s
       };
     
     LangLang.parse = function(str, caretPos) {
