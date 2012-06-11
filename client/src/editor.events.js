@@ -3,6 +3,9 @@
     Editor.bindEvents = function() {
       $('#editors').on('keyup', '.supersimple-editor-input', function(e){
         var code = e.charCode? e.charCode : e.keyCode;
+        // Ignore pageup/pagedown/home/end
+        if (code >= 33 && code <= 36)
+          return;
         // Ignore arrow keys
         if (code >= 37 && code <= 40)
           return;
