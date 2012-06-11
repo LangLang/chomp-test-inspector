@@ -167,7 +167,10 @@ textarea::selection, textarea::-moz-selection, textarea::-webkit-selection
   margin: 4px 0
 
 .supersimple-editor-input::selection, .supersimple-editor-input::-moz-selection, .supersimple-editor-input::-webkit-selection
-  background: #b7b7cc
+  background: #8eb2ca
+
+.supersimple-editor-input *::selection, .supersimple-editor-input *::-moz-selection, .supersimple-editor-input *::-webkit-selection
+  background: #8eb2ca
 
 .disable-overlay
   position: fixed
