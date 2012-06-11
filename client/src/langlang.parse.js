@@ -78,15 +78,15 @@
         'def space identifier': function(a,b,c) {
           return astCons.def.apply(null, a.concat([b,c])); 
         },
-        'def space top': function(fl,l,r) {
+        'def space top': function(a,b,c) {
           return astCons.def.apply(null, a.concat([b,c])); 
         },
-        'def space bottom': function(fl,l,r) {
+        'def space bottom': function(a,b,c) {
           return astCons.def.apply(null, a.concat([b,c])); 
         },
-        'def space error': function(fl,l,r) {
+        'def space error': function(a,b,c) {
           return astCons.def.apply(null, a.concat([b,c])); 
-        }
+        },
         /*'identifier identifier': function() {
 
         },
