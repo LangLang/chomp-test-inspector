@@ -13,7 +13,7 @@ import WebsocketApp
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.FileStore as STM.FileStore
 import qualified Observer.StorageObserver
-import qualified STM.Messages as STM (Messages)
+import qualified STM.Messages as STM (Messages, ServerMessages)
 import qualified STM.Messages
 import qualified STM.Clients
 import ServerState
@@ -25,8 +25,8 @@ main = do
   -- Instantiate shared resources
   clients <- STM.Clients.newIO
   fileStore <- STM.FileStore.newIO watchPath
-  serverMessages <- STM.Messages.newIO
-  clientMessages <- STM.Messages.newIO
+  serverMessages <- STM.Messages.newIO :: IO STM.ServerMessages
+  clientMessages <- STM.Messages.newIO :: IO STM.Messages
   serverStateT <- newTVarIO Active :: IO (TVar ServerState)
   -- Run asynchronous observers
   maybeObserverId <- Observer.StorageObserver.forkFileObserver fileStore serverMessages
@@ -47,7 +47,7 @@ main = do
     watchPath = "tests" :: FilePath
 
 -- Loop the dispatch method until the termination flag is true and the message queues are both empty
-loopDispatch :: TVar ServerState -> Clients -> STM.FileStore -> STM.Messages -> STM.Messages -> IO ()
+loopDispatch :: TVar ServerState -> Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> IO ()
 loopDispatch serverStateT clients fileStore serverMessages clientMessages = loop
   where
     loop = do
@@ -78,7 +78,7 @@ foreverUntilIO loop check = do
 
 -- Set up the web application (front controller) with the websocket application (front controller)
 -- and shared resources (the file store and incoming message queues)
-webAppSettings :: Clients -> STM.FileStore -> STM.Messages -> STM.Messages -> Warp.Settings
+webAppSettings :: Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> Warp.Settings
 webAppSettings clients fileStore serverMessages clientMessages = Warp.defaultSettings
   { Warp.settingsPort = 8080
   , Warp.settingsIntercept = interceptWith defaultWebSocketsOptions $ websocketApp clients fileStore serverMessages clientMessages

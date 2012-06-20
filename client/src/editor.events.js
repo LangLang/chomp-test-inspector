@@ -12,6 +12,7 @@
         // Ignore shift/control/alt
         if (code == 0 || (code >= 16 && code <= 18))
           return;
+        //console.log(code);
         Editor.highlight(e.target);
       });
     };

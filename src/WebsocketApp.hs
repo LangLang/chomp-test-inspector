@@ -21,13 +21,13 @@ import qualified STM.FileStore as STM (FileStore())
 import qualified STM.Clients as STM (Clients)
 import qualified STM.Clients as Clients
 import Message
-import qualified STM.Messages as STM (Messages)
+import qualified STM.Messages as STM (ServerMessages, Messages)
 
 type Clients = STM.Clients Hybi10
 
 -- Websocket application responsible for updating the client browser and receiving updates from the
 -- the client
-websocketApp :: Clients -> STM.FileStore -> STM.Messages -> STM.Messages -> Request -> WebSockets Hybi10 ()
+websocketApp :: Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> Request -> WebSockets Hybi10 ()
 websocketApp clients fileStore serverMessages clientMessages req = do
   WS.acceptRequest req
   liftIO $ putStrLn $ "Client connected (TODO: lookup client)..."
@@ -57,7 +57,7 @@ sendMessage message = do
 
 listen :: Clients -> STM.FileStore -> STM.Messages -> WS.WebSockets Hybi10 ()
 listen clients fileStore messages = do
-  (flip WS.catchWsError $ catchDisconnect clients) receiveMessage
+  (flip WS.catchWsError catchDisconnect) receiveMessage
   return ()
   {-
   liftIO $ readMVar state >>= broadcast
@@ -79,8 +79,8 @@ listen clients fileStore messages = do
           sendMessage $ ParseError $ take 255 $ unpack messageString
       return ()
 
-    catchDisconnect :: WS.TextProtocol p => STM.Clients p -> SomeException -> WebSockets p ()
-    catchDisconnect clients e =
+    catchDisconnect :: SomeException -> WebSockets p ()
+    catchDisconnect e =
       case fromException e of
         Just WS.ConnectionClosed -> liftIO $ do
           Clients.broadcastMessage clients $ Notify $ ClientDisconnected "TODO: client identifier"

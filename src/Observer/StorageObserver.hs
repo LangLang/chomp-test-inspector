@@ -19,13 +19,13 @@ import Message
 import qualified STM.FileStore
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.Messages
-import qualified STM.Messages as STM (Messages)
+import qualified STM.Messages as STM (ServerMessages)
 
 -- Types
 type FileObserver = INotify
 
 -- Run the asynchronous file observer
-forkFileObserver :: STM.FileStore -> STM.Messages -> IO (Maybe FileObserver)
+forkFileObserver :: STM.FileStore -> STM.ServerMessages -> IO (Maybe FileObserver)
 forkFileObserver fileStore messages = do
   -- Try to load files in the watch directory
   errorOrFiles <- try $ STM.FileStore.reload fileStore
@@ -68,7 +68,7 @@ killFileObserver :: FileObserver -> IO ()
 killFileObserver fileObserver = killINotify fileObserver
 
 -- Handle inotify events (on files / directories) 
-inotifyEvent :: STM.Messages -> Event -> IO ()
+inotifyEvent :: STM.ServerMessages -> Event -> IO ()
 inotifyEvent messages e = do
   case e of
     -- A file was modified
@@ -132,9 +132,9 @@ inotifyEvent messages e = do
     fromMaybeFilePath :: Maybe FilePath -> Text
     fromMaybeFilePath = maybe "Unknown file" $ \filename -> "'" `append` pack filename `append` "'"
     
-    enqueue = STM.Messages.enqueueMessage messages
-    unloadFiles event = enqueue $ ReloadFiles event []
-    reloadWatchPath = enqueue ReloadWatchPath
-    loadFile event path = enqueue $ LoadFile event path
-    unloadFile event path = enqueue $ UnloadFile event path
+    enqueue = STM.Messages.enqueueServerMessage messages
+    unloadFiles event = enqueue $ ServerReloadFiles event []
+    reloadWatchPath = enqueue ServerReloadWatchPath
+    loadFile event path = enqueue $ ServerLoadFile event path
+    unloadFile event path = enqueue $ ServerUnloadFile event path
     loadModifications path = return () :: IO ()-- TODO
