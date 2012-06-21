@@ -27,3 +27,11 @@ unloadFile :: Clients -> STM.FileStore -> StorageEvent -> FileInfo -> IO ()
 unloadFile clients fileStore event file =
   STM.FileStore.unload fileStore file
   >> (STM.Clients.broadcastMessage clients $ UnloadFile event file)
+
+--loadDiff :: Clients -> STM.FileStore -> FileInfo -> IO ()
+--loadDiff clients fileStore file =
+--  STM.Clients.broadcastMessage clients $ LoadDiff generateDiff
+--  where
+--    generateDiff :: IO Patch
+--generateDiffPatch    generateDiff = 
+      

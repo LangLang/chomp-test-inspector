@@ -68,3 +68,6 @@ unload fs f =
   where
     fsFiles = files fs
 
+-- Generate a difference patch for a file in the store that was modified on disk
+--generateDiffPatch :: IO Patch
+--generateDiffPatch = return  
