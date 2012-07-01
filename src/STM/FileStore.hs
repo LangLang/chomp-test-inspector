@@ -1,9 +1,8 @@
 module STM.FileStore (FileStore, rootPath, newIO, allFiles, clear, reload, load, unload) where
 
 -- Standard modules
-import Control.Monad (liftM, (<=<), zipWithM)
---import Control.Monad.Trans (liftIO)
-import Control.Concurrent.STM (atomically)
+import Control.Monad (liftM, (<=<), zipWithM, filterM)
+import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TVar as TVar
 import Data.Text (Text)
 import Data.Maybe (isNothing)
@@ -69,15 +68,26 @@ load :: FileStore -> FileInfo -> IO ()
 load fs f = do
   newElement <- createFileStoreElement f Nothing
   _ <- atomically $ do
-    currentList <- readTVar $ files fs
-    TList.append currentList newElement 
+    oldList <- readTVar $ files fs
+    -- Note: Using TList.cons would probably be faster than TList.append because we're not keeping a tlist
+    --       end-point. However, append keeps the file listing order on the clients more or less
+    --       consistent
+    writeEnd <- TList.end oldList 
+    TList.append writeEnd newElement
   return ()
 
 -- Remove the file from the file store
 unload :: FileStore -> FileInfo -> IO ()
-unload fs f =  
-  -- TODO: previous implementation was incorrect
-  undefined
+unload fs f =
+  atomically $ do
+    oldTList <- readTVar $ files fs
+    oldList <- TList.toList oldTList
+    newList <- filterM notIsFile oldList
+    newTLists <- TList.fromList newList
+    writeTVar (files fs) (fst newTLists)
+  where
+    notIsFile :: FileStoreElement -> STM Bool
+    notIsFile el = (liftM (/= f)) $ readTVar $ fileInfo el
 
 -- Generate a difference patch for a file in the store that was modified on disk
 --generateDiffPatch :: IO Patch
