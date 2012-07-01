@@ -1,4 +1,4 @@
-module STM.Messages (ServerMessages, Messages, ServerMessages, newIO, enqueueMessage, enqueueServerMessage) where
+module STM.Messages (Messages, ServerMessages, newIO, enqueueMessage, enqueueServerMessage) where
 
 -- Standard modules
 import Control.Concurrent.STM (atomically)

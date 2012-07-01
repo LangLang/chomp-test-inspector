@@ -35,7 +35,7 @@ websocketApp clients fileStore serverMessages clientMessages req = do
   -- Send the list of files currently in the file store to the client application
   -- TODO: Read an "active" flag from the file store.
   --       If the file store is not active, then send ReloadFiles LostRootDirectory or similar instead
-  files <- liftIO $ STM.FileStore.contents fileStore
+  files <- liftIO $ STM.FileStore.allFiles fileStore
   sendMessage $ ReloadFiles Connected files 
   
   -- Obtain a sink to use for sending data in another thread
