@@ -37,7 +37,7 @@ allFiles fs = do
   fileStoreElements <- atomically $ (TList.toList <=< TVar.readTVar) $ files fs
   mapM (TVar.readTVarIO . fileInfo) fileStoreElements
 
--- Clear the file store using multiple operations 
+-- Clear the file store using multiple operations
 clear :: FileStore -> IO ()
 clear fs = do
   xs <- atomically $ TCursor.tryReadTCursor fsFiles

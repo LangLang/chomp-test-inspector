@@ -8,7 +8,8 @@ import Data.Text.IO (putStrLn, hPutStrLn)
 --import Control.Monad.Trans (liftIO)
 import Control.Monad (liftM)
 import System.IO (stderr)
-import System.IO.Error (try, ioeGetErrorType, IOErrorType)
+import System.IO.Error (ioeGetErrorType, IOErrorType)
+import Control.Exception (try)
 import System.INotify (INotify, EventVariety(..), Event(..), initINotify, killINotify, addWatch)
 #ifdef __GLASGOW_HASKELL__
 import qualified GHC.IO.Exception as Exception
@@ -20,6 +21,7 @@ import qualified STM.FileStore
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.Messages
 import qualified STM.Messages as STM (ServerMessages)
+import qualified Observer.FileLoader
 
 -- Types
 type FileObserver = INotify
@@ -135,6 +137,8 @@ inotifyEvent messages e = do
     enqueue = STM.Messages.enqueueServerMessage messages
     unloadFiles event = enqueue $ ServerReloadFiles event []
     reloadWatchPath = enqueue ServerReloadWatchPath
-    loadFile event path = enqueue $ ServerLoadFile event path
+    loadFile event path = 
+      (enqueue $ ServerLoadFile event path)
+      >> Observer.FileLoader.loadFileContents messages path
     unloadFile event path = enqueue $ ServerUnloadFile event path
     loadModifications path = return () :: IO ()-- TODO
