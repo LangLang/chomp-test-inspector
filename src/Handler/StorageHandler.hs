@@ -23,7 +23,8 @@ loadFile clients fileStore event file =
   
 loadFileContents :: Clients -> STM.FileStore -> FileInfo -> Text -> IO ()
 loadFileContents clients fileStore filePath fileContents =
-  return ()
+  STM.FileStore.loadContents fileStore filePath fileContents
+  >> (STM.Clients.broadcastMessage clients $ LoadFileContents filePath fileContents)
   
 unloadFile :: Clients -> STM.FileStore -> StorageEvent -> FileInfo -> IO ()
 unloadFile clients fileStore event file =
