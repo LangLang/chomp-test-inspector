@@ -29,7 +29,7 @@ import qualified Observer.WatchFile
 -- Types
 type WatchDirectoryHandle = INotify
 
--- Run the asynchronous file observer
+-- Run the asynchronous directory watch
 forkObserver :: STM.FileStore -> STM.ServerMessages -> IO (Maybe WatchDirectoryHandle)
 forkObserver fileStore messages = do
   let rootPath = STM.FileStore.rootPath fileStore
@@ -85,14 +85,18 @@ inotifyEvent rootPath messages event = do
     -- A file was modified
     -- TODO: Load the changes (unless the modification was instigated by us in which case we're already up to date)
     Modified False maybePath -> do
-      putStrLn $ (fromMaybeFilePath maybePath) `append` " was modified."
+      putStrLn $ case maybePath of
+        Just p -> "'" `append` pack p `append` "' was modified."
+        Nothing -> "An unknown was modified."
       case maybePath of
         Just p -> loadModifications p
         Nothing -> return ()
         
     -- A file's attributes have changed
     Attributes False maybePath -> do
-      putStrLn $ "The file '" `append` (fromMaybeFilePath maybePath) `append` "'s attributes has changed."   
+      putStrLn $ case maybePath of
+        Just p -> "The file '" `append` pack p `append` "'s attributes has changed."
+        Nothing -> "An unknown file's attributes has changed."
       -- TODO: notify the client if the file has become read-only (then gray out the editor)
     
     -- A file was moved out of the watch path, so remove it from the file store
@@ -134,15 +138,12 @@ inotifyEvent rootPath messages event = do
     -- The inotify queue overflowed, remove all files from the file store
     -- TODO: Try to start from scratch by clearing the queues and reloading all files? 
     QOverflow -> do
-      putStrLn "The queue overflowed, unload all the files."
+      putStrLn $ "The watch queue for '" `append` pack rootPath `append` "' overflowed, unload all the files."
       unloadFiles Error
     
     _ -> return ()
 
-  where 
-    fromMaybeFilePath :: Maybe FilePath -> Text
-    fromMaybeFilePath = maybe "Unknown file" $ \filename -> "'" `append` pack filename `append` "'"
-    
+  where
     enqueue = STM.Messages.enqueueServerMessage messages
     unloadFiles e = enqueue $ ServerReloadFiles e []
     movedWatchPath = do

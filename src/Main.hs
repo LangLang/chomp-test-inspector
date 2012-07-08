@@ -59,6 +59,7 @@ main = do
       System.Exit.exitWith $ System.Exit.ExitFailure 1
   
   -- Try to find the executable tool specified in the arguments
+  putStrLn ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
   maybeAbsExecPath <- System.Directory.findExecutable execPath
   if isNothing maybeAbsExecPath
     then putStrLn ("Executable '" ++ execPath ++ "' could not be found. The executable will not be run.")
