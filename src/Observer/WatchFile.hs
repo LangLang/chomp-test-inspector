@@ -1,4 +1,4 @@
-module Observer.FileWatch (loadFileContents, loadFilesContents) where
+module Observer.WatchFile (loadFileContents, loadFilesContents) where
 
 -- Standard modules
 import qualified Data.Text as T
@@ -24,4 +24,4 @@ loadFileContents messages rootPath path =
     relPath = rootPath `System.FilePath.combine` path
 
 loadFilesContents :: STM.ServerMessages -> FilePath -> [FilePath] -> IO ()
-loadFilesContents messages rootPath = mapM_ (Observer.FileWatch.loadFileContents messages rootPath)
+loadFilesContents messages rootPath = mapM_ (Observer.WatchFile.loadFileContents messages rootPath)

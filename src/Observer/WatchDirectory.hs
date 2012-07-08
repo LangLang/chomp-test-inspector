@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
-module Observer.DirectoryWatch(WatchHandle, forkDirectoryWatch, killDirectoryWatch) where
+module Observer.WatchDirectory(WatchDirectoryHandle, forkObserver, killObserver) where
 
 -- Standard modules
 import Prelude hiding (putStrLn)
@@ -24,14 +24,14 @@ import qualified STM.FileStore
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.Messages
 import qualified STM.Messages as STM (ServerMessages)
-import qualified Observer.FileWatch
+import qualified Observer.WatchFile
 
 -- Types
-type WatchHandle = INotify
+type WatchDirectoryHandle = INotify
 
 -- Run the asynchronous file observer
-forkDirectoryWatch :: STM.FileStore -> STM.ServerMessages -> IO (Maybe WatchHandle)
-forkDirectoryWatch fileStore messages = do
+forkObserver :: STM.FileStore -> STM.ServerMessages -> IO (Maybe WatchDirectoryHandle)
+forkObserver fileStore messages = do
   let rootPath = STM.FileStore.rootPath fileStore
   -- Try to load files in the watch directory
   errorOrFiles <- try $ listAllFiles rootPath 
@@ -48,11 +48,11 @@ forkDirectoryWatch fileStore messages = do
     Right files ->
       -- Load all files and return the directory's observer
       STM.FileStore.reload fileStore files
-      >> (Observer.FileWatch.loadFilesContents messages rootPath files) 
+      >> (Observer.WatchFile.loadFilesContents messages rootPath files) 
       >> (liftM Just $ runINotify rootPath)
   where    
     -- Run inotify on the watch directory
-    runINotify :: FilePath -> IO WatchHandle
+    runINotify :: FilePath -> IO WatchDirectoryHandle
     runINotify rootPath = do
       inotify <- initINotify
       _       <- addWatch inotify masks rootPath $ inotifyEvent rootPath messages
@@ -75,8 +75,8 @@ forkDirectoryWatch fileStore messages = do
 #endif
 
 -- Stop the asynchronous file observer
-killDirectoryWatch :: WatchHandle -> IO ()
-killDirectoryWatch handle = killINotify handle
+killObserver :: WatchDirectoryHandle -> IO ()
+killObserver handle = killINotify handle
 
 -- Handle inotify events (on files / directories) 
 inotifyEvent :: FilePath -> STM.ServerMessages -> Event -> IO ()
@@ -151,10 +151,10 @@ inotifyEvent rootPath messages event = do
         Left _      -> enqueue $ ServerReloadFiles MovedOutRootDirectory [] 
         Right files ->
           (enqueue $ ServerReloadFiles RestoredRootDirectory files)
-          >> (Observer.FileWatch.loadFilesContents messages rootPath files) 
+          >> (Observer.WatchFile.loadFilesContents messages rootPath files) 
     loadFile e path = 
       (enqueue $ ServerLoadFile e path)
-      >> Observer.FileWatch.loadFileContents messages rootPath path
+      >> Observer.WatchFile.loadFileContents messages rootPath path
     unloadFile e path = enqueue $ ServerUnloadFile e path
     loadModifications path = return () :: IO () -- TODO
 

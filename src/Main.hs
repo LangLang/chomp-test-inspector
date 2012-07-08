@@ -16,7 +16,7 @@ import WebApp
 import WebsocketApp
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.FileStore as STM.FileStore
-import qualified Observer.DirectoryWatch
+import qualified Observer.WatchDirectory
 import qualified STM.Messages as STM (Messages, ServerMessages)
 import qualified STM.Messages
 import qualified STM.Clients
@@ -42,8 +42,8 @@ main = do
   clientMessages <- STM.Messages.newIO :: IO STM.Messages
   serverStateT <- newTVarIO Active :: IO (TVar ServerState)
     
-  -- Run asynchronous observer: Directory watch
-  maybeObserverId <- Observer.DirectoryWatch.forkDirectoryWatch fileStore serverMessages
+  -- Run asynchronous observer: Watch directory
+  maybeObserverId <- Observer.WatchDirectory.forkObserver fileStore serverMessages
   case maybeObserverId of
     Just observerId -> do
       -- Dispatch messages
@@ -54,7 +54,7 @@ main = do
       atomically $ writeTVar serverStateT Terminating
       waitUntilTerminated serverStateT
       -- Stop the asynchronous observers
-      Observer.DirectoryWatch.killDirectoryWatch observerId
+      Observer.WatchDirectory.killObserver observerId
     Nothing ->
       System.Exit.exitWith $ System.Exit.ExitFailure 1
   
@@ -64,7 +64,7 @@ main = do
     then putStrLn ("Executable '" ++ execPath ++ "' could not be found. The executable will not be run.")
     else return ()
   
-  -- Run asynchronous observer: Executable watch
+  -- Run asynchronous observer: Watch executable
   -- TODO...
   
   where
