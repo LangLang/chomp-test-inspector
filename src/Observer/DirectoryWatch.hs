@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
-module Observer.StorageObserver(FileObserver, forkFileObserver, killFileObserver) where
+module Observer.DirectoryWatch(WatchHandle, forkDirectoryWatch, killDirectoryWatch) where
 
 -- Standard modules
 import Prelude hiding (putStrLn)
@@ -24,14 +24,14 @@ import qualified STM.FileStore
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.Messages
 import qualified STM.Messages as STM (ServerMessages)
-import qualified Observer.FileLoader
+import qualified Observer.FileWatch
 
 -- Types
-type FileObserver = INotify
+type WatchHandle = INotify
 
 -- Run the asynchronous file observer
-forkFileObserver :: STM.FileStore -> STM.ServerMessages -> IO (Maybe FileObserver)
-forkFileObserver fileStore messages = do
+forkDirectoryWatch :: STM.FileStore -> STM.ServerMessages -> IO (Maybe WatchHandle)
+forkDirectoryWatch fileStore messages = do
   let rootPath = STM.FileStore.rootPath fileStore
   -- Try to load files in the watch directory
   errorOrFiles <- try $ listAllFiles rootPath 
@@ -51,7 +51,7 @@ forkFileObserver fileStore messages = do
       >> (liftM Just $ runINotify rootPath)
   where    
     -- Run inotify on the watch directory
-    runINotify :: FilePath -> IO FileObserver
+    runINotify :: FilePath -> IO WatchHandle
     runINotify rootPath = do
       inotify <- initINotify
       _       <- addWatch inotify masks rootPath $ inotifyEvent rootPath messages
@@ -74,8 +74,8 @@ forkFileObserver fileStore messages = do
 #endif
 
 -- Stop the asynchronous file observer
-killFileObserver :: FileObserver -> IO ()
-killFileObserver fileObserver = killINotify fileObserver
+killDirectoryWatch :: WatchHandle -> IO ()
+killDirectoryWatch handle = killINotify handle
 
 -- Handle inotify events (on files / directories) 
 inotifyEvent :: FilePath -> STM.ServerMessages -> Event -> IO ()
@@ -151,7 +151,7 @@ inotifyEvent rootPath messages event = do
         Right files -> enqueue $ ServerReloadWatchPath files 
     loadFile e path = 
       (enqueue $ ServerLoadFile e path)
-      >> Observer.FileLoader.loadFileContents messages path
+      >> Observer.FileWatch.loadFileContents messages path
     unloadFile e path = enqueue $ ServerUnloadFile e path
     loadModifications path = return () :: IO () -- TODO
 

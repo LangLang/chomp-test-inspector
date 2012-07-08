@@ -1,4 +1,4 @@
-module Observer.FileLoader (loadFileContents) where
+module Observer.FileWatch (loadFileContents) where
 
 -- Standard modules
 import qualified Data.Text as T
