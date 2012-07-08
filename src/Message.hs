@@ -14,7 +14,6 @@ import FileStore
 -- Messages sent between clients and the server (and possibly between clients as well)
 data Message = Acknowledge
              | Notify Notification
-             | ReloadWatchPath
              | ReloadFiles StorageEvent [FileInfo]
              | LoadFile StorageEvent FileInfo
              | LoadFileContents FileInfo Text
@@ -24,8 +23,7 @@ data Message = Acknowledge
   deriving (Show, Read)
 
 -- Server generated messages (to be processed locally)
-data ServerMessage = ServerReloadWatchPath [FileInfo]
-                   | ServerReloadFiles StorageEvent [FileInfo]
+data ServerMessage = ServerReloadFiles StorageEvent [FileInfo]
                    | ServerLoadFile StorageEvent FileInfo
                    | ServerLoadFileContents FileInfo Text
                    | ServerUnloadFile StorageEvent FileInfo

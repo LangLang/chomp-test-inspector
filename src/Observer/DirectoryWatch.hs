@@ -47,7 +47,8 @@ forkDirectoryWatch fileStore messages = do
         Nothing -> ioError e
     Right files ->
       -- Load all files and return the directory's observer
-      STM.FileStore.reload fileStore files 
+      STM.FileStore.reload fileStore files
+      -- >> (Observer.FileWatch.loadFilesContents messages rootPath files) 
       >> (liftM Just $ runINotify rootPath)
   where    
     -- Run inotify on the watch directory
@@ -107,7 +108,7 @@ inotifyEvent rootPath messages event = do
     -- The watch path was moved, so empty the storage
     MovedSelf _ -> do
       putStrLn "The watched path was moved."
-      reloadWatchPath
+      movedWatchPath
     
     -- A new file was created, load it into the file store 
     Created False p -> do
@@ -144,14 +145,16 @@ inotifyEvent rootPath messages event = do
     
     enqueue = STM.Messages.enqueueServerMessage messages
     unloadFiles e = enqueue $ ServerReloadFiles e []
-    reloadWatchPath = do
+    movedWatchPath = do
       errorOrFiles <- try $ listAllFiles rootPath :: IO (Either IOError [FileInfo])
       case errorOrFiles of
         Left _      -> enqueue $ ServerReloadFiles MovedOutRootDirectory [] 
-        Right files -> enqueue $ ServerReloadWatchPath files 
+        Right files ->
+          (enqueue $ ServerReloadFiles RestoredRootDirectory files)
+          -- >> (Observer.FileWatch.loadFilesContents messages rootPath files) 
     loadFile e path = 
       (enqueue $ ServerLoadFile e path)
-      >> Observer.FileWatch.loadFileContents messages path
+      -- >> Observer.FileWatch.loadFileContents messages rootPath path
     unloadFile e path = enqueue $ ServerUnloadFile e path
     loadModifications path = return () :: IO () -- TODO
 

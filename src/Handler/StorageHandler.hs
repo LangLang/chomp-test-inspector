@@ -1,4 +1,7 @@
-module Handler.StorageHandler (reloadWatchPath, reloadFiles, loadFile, unloadFile) where
+module Handler.StorageHandler (reloadFiles, loadFile, unloadFile) where
+
+-- Standard modules
+import Data.Text
 
 -- Application modules
 import Message
@@ -7,16 +10,11 @@ import FileStore
 import qualified STM.Clients
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.FileStore
-
-reloadWatchPath :: Clients -> STM.FileStore -> [FileInfo] -> IO ()
-reloadWatchPath clients fileStore files = do
-  errorOrFiles <- STM.FileStore.reload fileStore files
-  STM.Clients.broadcastMessage clients $ ReloadFiles RestoredRootDirectory files
   
 reloadFiles :: Clients -> STM.FileStore -> StorageEvent -> [FileInfo] -> IO ()
-reloadFiles clients fileStore event files = do
-  errorOrFiles <- STM.FileStore.reload fileStore files
-  STM.Clients.broadcastMessage clients $ ReloadFiles event files
+reloadFiles clients fileStore event files =
+  STM.FileStore.reload fileStore files
+  >> (STM.Clients.broadcastMessage clients $ ReloadFiles event files)
 
 loadFile :: Clients -> STM.FileStore -> StorageEvent -> FileInfo -> IO ()
 loadFile clients fileStore event file =

@@ -44,14 +44,12 @@ processServerMessage :: Clients -> STM.FileStore -> ServerMessage -> IO ()
 processServerMessage clients fileStore message =
   case message of
     -- Server messages
-    ServerReloadWatchPath files -> reloadWatchPath files 
     ServerReloadFiles event files -> reloadFiles event files
     ServerLoadFile storageEvent fileInfo -> loadFile storageEvent fileInfo
     ServerUnloadFile storageEvent fileInfo -> unloadFile storageEvent fileInfo
     -- Unknown message (error)
     _ -> undefined
   where
-    reloadWatchPath = Handler.StorageHandler.reloadWatchPath clients fileStore
     reloadFiles = Handler.StorageHandler.reloadFiles clients fileStore
     loadFile = Handler.StorageHandler.loadFile clients fileStore
     unloadFile = Handler.StorageHandler.unloadFile clients fileStore
