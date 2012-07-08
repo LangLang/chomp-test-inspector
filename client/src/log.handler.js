@@ -13,6 +13,9 @@
       LoadFile: function(storageEvent, file) { 
         console.log("...load file (" + show(storageEvent) + "): ", file);
       },
+      LoadFileContents: function(file, contents) { 
+        console.log("...load file contents: ", file);
+      },
       UnloadFile: function(storageEvent, file) {
         console.log("...unload file (" + show(storageEvent) + "): ", file);
       },

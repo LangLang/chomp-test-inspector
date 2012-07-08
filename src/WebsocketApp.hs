@@ -7,6 +7,7 @@ import Network.WebSockets as WS hiding (Message, ParseError)
 import Control.Exception (fromException)
 import Data.Text (pack, unpack, append, Text)
 import Data.Text.IO (putStrLn)
+import Control.Monad (zipWithM_)
 import Control.Monad.Trans (liftIO)
 import Control.Exception (SomeException)
 --import Control.Concurrent (MVar, newMVar, modifyMVar_, readMVar)
@@ -32,11 +33,13 @@ websocketApp clients fileStore serverMessages clientMessages req = do
   WS.acceptRequest req
   liftIO $ putStrLn $ "Client connected (TODO: lookup client)..."
 
-  -- Send the list of files currently in the file store to the client application
+  -- Send the list of files and their contents currently in the file store to the client application
   -- TODO: Read an "active" flag from the file store.
   --       If the file store is not active, then send ReloadFiles LostRootDirectory or similar instead
   files <- liftIO $ STM.FileStore.allFiles fileStore
-  sendMessage $ ReloadFiles Connected files 
+  filesContents <- liftIO $  mapM (STM.FileStore.readFileContents fileStore) files
+  _ <- sendMessage $ ReloadFiles Connected files
+  _ <- zipWithM_ (\file contents -> sendMessage $ LoadFileContents file contents) files filesContents
   
   -- Obtain a sink to use for sending data in another thread
   sink <- WS.getSink

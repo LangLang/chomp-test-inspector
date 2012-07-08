@@ -40,6 +40,27 @@
           .remove();
         $('#editors').append(createEditor(file));
       },
+      LoadFileContents: function(file, maybeContents) {
+        var $editor = $('#editors')
+          .find(".editor-source-filename[value='" + file + "']")
+          .closest('.editor-source')
+          .find('.supersimple-editor-input');
+        if ($editor.length !== 1)
+          return;        
+        adt({
+          Just: function(contents) { 
+            $editor
+              .text(contents)
+              .attr('contenteditable', 'true');
+            Editor.highlight($editor.get(0));
+          },
+          Nothing: function() {
+            $editor
+              .text("")
+              .attr('contenteditable', 'false');
+          }
+        })(maybeContents);
+      },
       UnloadFile: function(storageEvent, file) { 
         $('#editors')
           .find(".editor-source-filename[value='" + file + "']")

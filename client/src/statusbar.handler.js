@@ -14,6 +14,7 @@
           MovedInFile: function() { StatusBar.info("The file ", html.code(file), " has been moved into the project"); }
         })(storageEvent);
       },
+      LoadFileContents: function(file, contents) {},
       UnloadFile: function(storageEvent, file) { 
         adt({
           DeletedFile: function() { StatusBar.info("The file ", html.code(file), " has been deleted"); },

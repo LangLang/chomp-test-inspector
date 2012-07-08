@@ -16,7 +16,7 @@ data Message = Acknowledge
              | Notify Notification
              | ReloadFiles StorageEvent [FileInfo]
              | LoadFile StorageEvent FileInfo
-             | LoadFileContents FileInfo Text
+             | LoadFileContents FileInfo (Maybe Text)
              | UnloadFile StorageEvent FileInfo
              | PatchFile FilePath Patch
              | ParseError String

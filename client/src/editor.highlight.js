@@ -86,6 +86,8 @@
         var selection = window.getSelection();
         if (selection.focusNode === domElement)
           return getFocusInSelection(selection);
+        if (selection.focusNode == null)
+          return null;
         return getParentNodeOffset(domElement, selection.focusNode) + getFocusInSelection(selection);
       },
       setCaretOffset = function(domElement, offset) {
@@ -110,6 +112,7 @@
       domElement.innerHTML = "";
       for (var i = 0; i < result.html.length; ++i)
         domElement.appendChild(result.html[i]);
-      setCaretOffset(domElement, result.caretPos);
+      if (result.caretPos != null)
+        setCaretOffset(domElement, result.caretPos);
     };
   })(html.evalCons);

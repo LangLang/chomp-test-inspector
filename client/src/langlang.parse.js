@@ -162,7 +162,7 @@
       var updateCaretPos = function(inputLength, reducedLength) {
         var offset = reducedLength - inputLength;
         // Subtract the reduction in length from both the caret and the lex position
-        if (lexPos <= caretPos)
+        if (caretPos != null && lexPos <= caretPos)
           caretPos += offset;
         lexPos += offset;
       };
