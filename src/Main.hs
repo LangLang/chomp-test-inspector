@@ -31,7 +31,7 @@ main = do
     then putStrLn "No arguments supplied, using the current path as the watch directory." 
       >> System.Directory.getCurrentDirectory >>= \dir -> return [dir, defaultExecPath]
     else if head args == "--help"
-      then printUsage >> System.Exit.exitWith (System.Exit.ExitFailure 0)
+      then printUsage >> System.Exit.exitSuccess
       else return $ if length args == 2 then args else [head args, defaultExecPath]
     
   -- Try to find the tool specified in the arguments
