@@ -6,6 +6,7 @@ import Network.Wai.Handler.WebSockets (interceptWith)
 import Network.WebSockets(defaultWebSocketsOptions)
 import Control.Concurrent (forkIO, yield)
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
+import Data.Maybe (isNothing)
 import qualified System.Environment
 import qualified System.Exit 
 import qualified System.Directory
@@ -34,7 +35,11 @@ main = do
       then printUsage >> System.Exit.exitSuccess
       else return $ if length args == 2 then args else [head args, defaultExecPath]
     
-  -- Try to find the tool specified in the arguments
+  -- Try to find the executable tool specified in the arguments
+  maybeAbsExecPath <- System.Directory.findExecutable execPath
+  if isNothing maybeAbsExecPath
+    then putStrLn ("Executable '" ++ execPath ++ "' could not be found. The executable will not be run.")
+    else return () 
   
   -- Instantiate shared resources
   clients <- STM.Clients.newIO
@@ -59,8 +64,7 @@ main = do
       return ()
   where
     defaultExecPath = "chomp"
-    printUsage = 
-      putStrLn "USAGE: chomp-test-inspector [watchPath] [executablePath]"
+    printUsage = putStrLn "USAGE: chomp-test-inspector [watchPath] [executablePath]"
 
 -- Loop the dispatch method until the termination flag is true and the message queues are both empty
 loopDispatch :: TVar ServerState -> Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> IO ()
