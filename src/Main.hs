@@ -8,6 +8,7 @@ import Control.Concurrent (forkIO, yield)
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
 import qualified System.Environment
 import qualified System.Exit 
+import qualified System.Directory
 
 -- Application modules
 import WebApp
@@ -26,9 +27,12 @@ main :: IO ()
 main = do
   -- Read command line arguments
   args <- System.Environment.getArgs
-  [watchPath, execPath] <- if not (length args `elem` [1,2])
-    then putStrLn "Expected at least 1 argument." >> printUsage >> System.Exit.exitWith (System.Exit.ExitFailure 1)
-    else return $ if length args == 2 then args else [head args, "chomp"]
+  [watchPath, execPath] <- if length args == 0
+    then putStrLn "No arguments supplied, using the current path as the watch directory." 
+      >> System.Directory.getCurrentDirectory >>= \dir -> return [dir, defaultExecPath]
+    else if head args == "--help"
+      then printUsage >> System.Exit.exitWith (System.Exit.ExitFailure 0)
+      else return $ if length args == 2 then args else [head args, defaultExecPath]
     
   -- Try to find the tool specified in the arguments
   
@@ -54,8 +58,9 @@ main = do
     Nothing ->
       return ()
   where
+    defaultExecPath = "chomp"
     printUsage = 
-      putStrLn "USAGE: chomp-test-inspector watchPath [executablePath]"
+      putStrLn "USAGE: chomp-test-inspector [watchPath] [executablePath]"
 
 -- Loop the dispatch method until the termination flag is true and the message queues are both empty
 loopDispatch :: TVar ServerState -> Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> IO ()
