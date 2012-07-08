@@ -61,6 +61,7 @@ executable chomp-test-inspector
                   Diff -any,
                   directory -any,
                   enumerator -any,
+                  filepath -any,
                   hamlet -any,
                   hinotify -any,
                   http-types -any,

@@ -47,11 +47,13 @@ processServerMessage clients fileStore message =
     ServerReloadFiles event files -> reloadFiles event files
     ServerLoadFile storageEvent fileInfo -> loadFile storageEvent fileInfo
     ServerUnloadFile storageEvent fileInfo -> unloadFile storageEvent fileInfo
+    ServerLoadFileContents fileInfo fileContents -> loadFileContents fileInfo fileContents
     -- Unknown message (error)
     _ -> undefined
   where
     reloadFiles = Handler.StorageHandler.reloadFiles clients fileStore
     loadFile = Handler.StorageHandler.loadFile clients fileStore
+    loadFileContents = Handler.StorageHandler.loadFileContents clients fileStore
     unloadFile = Handler.StorageHandler.unloadFile clients fileStore
 
 processClientMessage :: Clients -> STM.FileStore -> Message -> IO ()

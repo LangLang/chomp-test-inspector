@@ -1,4 +1,4 @@
-module Handler.StorageHandler (reloadFiles, loadFile, unloadFile) where
+module Handler.StorageHandler (reloadFiles, loadFile, loadFileContents, unloadFile) where
 
 -- Standard modules
 import Data.Text
@@ -24,6 +24,10 @@ loadFile clients fileStore event file =
     putStrLn $ "Load file " ++ (show file) ++ "... new filestore:"
     putStrLn $ show files
   >> (STM.Clients.broadcastMessage clients $ LoadFile event file)
+  
+loadFileContents :: Clients -> STM.FileStore -> FileInfo -> Text -> IO ()
+loadFileContents clients fileStore filePath fileContents =
+  return ()
   
 unloadFile :: Clients -> STM.FileStore -> StorageEvent -> FileInfo -> IO ()
 unloadFile clients fileStore event file =

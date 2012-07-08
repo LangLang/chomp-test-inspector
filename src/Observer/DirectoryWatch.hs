@@ -39,7 +39,7 @@ forkDirectoryWatch fileStore messages = do
   case errorOrFiles of
     Left e -> do
       -- Clear the file store and return no observer
-      STM.FileStore.clear fileStore      
+      STM.FileStore.clear fileStore
       case generateIOErrorMessage rootPath $ ioeGetErrorType e of 
         Just message -> do
           hPutStrLn stderr $ pack message
@@ -48,7 +48,7 @@ forkDirectoryWatch fileStore messages = do
     Right files ->
       -- Load all files and return the directory's observer
       STM.FileStore.reload fileStore files
-      -- >> (Observer.FileWatch.loadFilesContents messages rootPath files) 
+      >> (Observer.FileWatch.loadFilesContents messages rootPath files) 
       >> (liftM Just $ runINotify rootPath)
   where    
     -- Run inotify on the watch directory
@@ -151,10 +151,10 @@ inotifyEvent rootPath messages event = do
         Left _      -> enqueue $ ServerReloadFiles MovedOutRootDirectory [] 
         Right files ->
           (enqueue $ ServerReloadFiles RestoredRootDirectory files)
-          -- >> (Observer.FileWatch.loadFilesContents messages rootPath files) 
+          >> (Observer.FileWatch.loadFilesContents messages rootPath files) 
     loadFile e path = 
       (enqueue $ ServerLoadFile e path)
-      -- >> Observer.FileWatch.loadFileContents messages rootPath path
+      >> Observer.FileWatch.loadFileContents messages rootPath path
     unloadFile e path = enqueue $ ServerUnloadFile e path
     loadModifications path = return () :: IO () -- TODO
 
