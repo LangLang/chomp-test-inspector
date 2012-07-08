@@ -44,7 +44,7 @@ processServerMessage :: Clients -> STM.FileStore -> ServerMessage -> IO ()
 processServerMessage clients fileStore message =
   case message of
     -- Server messages
-    ServerReloadWatchPath -> reloadWatchPath
+    ServerReloadWatchPath files -> reloadWatchPath files 
     ServerLoadFile storageEvent fileInfo -> loadFile storageEvent fileInfo
     ServerUnloadFile storageEvent fileInfo -> unloadFile storageEvent fileInfo
     -- Unknown message (error)

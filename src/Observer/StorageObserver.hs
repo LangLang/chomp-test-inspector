@@ -5,18 +5,21 @@ module Observer.StorageObserver(FileObserver, forkFileObserver, killFileObserver
 import Prelude hiding (putStrLn)
 import Data.Text hiding (map, filter)
 import Data.Text.IO (putStrLn, hPutStrLn)
+import Data.String.Utils (endswith)
 --import Control.Monad.Trans (liftIO)
 import Control.Monad (liftM)
 import System.IO (stderr)
 import System.IO.Error (ioeGetErrorType, IOErrorType)
 import Control.Exception (try)
 import System.INotify (INotify, EventVariety(..), Event(..), initINotify, killINotify, addWatch)
+import System.Directory (getDirectoryContents) 
 #ifdef __GLASGOW_HASKELL__
 import qualified GHC.IO.Exception as Exception
 #endif
 
 -- Application modules
 import Message
+import FileStore
 import qualified STM.FileStore
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.Messages
@@ -29,37 +32,42 @@ type FileObserver = INotify
 -- Run the asynchronous file observer
 forkFileObserver :: STM.FileStore -> STM.ServerMessages -> IO (Maybe FileObserver)
 forkFileObserver fileStore messages = do
+  let rootPath = STM.FileStore.rootPath fileStore
   -- Try to load files in the watch directory
-  errorOrFiles <- try $ STM.FileStore.reload fileStore
+  errorOrFiles <- try $ listAllFiles rootPath 
   -- Either fail gracefully if reading the path failed, or start watching the directory
   case errorOrFiles of
     Left e -> do
-      case generateErrorMessage $ ioeGetErrorType e of 
+      -- Clear the file store and return no observer
+      STM.FileStore.clear fileStore      
+      case generateIOErrorMessage rootPath $ ioeGetErrorType e of 
         Just message -> do
           hPutStrLn stderr $ pack message
           return Nothing
         Nothing -> ioError e
-    Right _ -> liftM Just $ runINotify
-  where
-    watchPath = STM.FileStore.rootPath fileStore
-    masks = [ Modify, Attrib, Move, MoveSelf, Create, Delete, DeleteSelf, OnlyDir ]
-    
+    Right files ->
+      -- Load all files and return the directory's observer
+      STM.FileStore.reload fileStore files 
+      >> (liftM Just $ runINotify rootPath)
+  where    
     -- Run inotify on the watch directory
-    runINotify :: IO FileObserver
-    runINotify = do
-      inotify <- initINotify 
-      _ <- addWatch inotify masks watchPath $ inotifyEvent messages
+    runINotify :: FilePath -> IO FileObserver
+    runINotify rootPath = do
+      inotify <- initINotify
+      _       <- addWatch inotify masks rootPath $ inotifyEvent rootPath messages
       return inotify
+      where  
+        masks = [ Modify, Attrib, Move, MoveSelf, Create, Delete, DeleteSelf, OnlyDir ]
     
     -- Generate a message from an IO error  
-    generateErrorMessage :: IOErrorType -> Maybe String
+    generateIOErrorMessage :: FilePath -> IOErrorType -> Maybe String
 #ifdef __GLASGOW_HASKELL__
-    generateErrorMessage errorType = case errorType of
+    generateIOErrorMessage rootPath errorType = case errorType of
       -- GHC only:
-      Exception.NoSuchThing -> Just $ "The path supplied `" ++ watchPath ++ "` does not exist."
-      Exception.PermissionDenied -> Just $ "Permission to read the the path `" ++ watchPath ++ "` was denied."      
-      Exception.InvalidArgument -> Just $ "The path supplied `" ++ watchPath ++ "` is not a valid directory name."
-      Exception.InappropriateType -> Just $ "The path supplied `" ++ watchPath ++ "` refers to a non-directory object."
+      Exception.NoSuchThing -> Just $ "The path supplied `" ++ rootPath ++ "` does not exist."
+      Exception.PermissionDenied -> Just $ "Permission to read the the path `" ++ rootPath ++ "` was denied."      
+      Exception.InvalidArgument -> Just $ "The path supplied `" ++ rootPath ++ "` is not a valid directory name."
+      Exception.InappropriateType -> Just $ "The path supplied `" ++ rootPath ++ "` refers to a non-directory object."
       _ -> Nothing
 #else
     generateErrorMessage errorType = Nothing
@@ -70,9 +78,9 @@ killFileObserver :: FileObserver -> IO ()
 killFileObserver fileObserver = killINotify fileObserver
 
 -- Handle inotify events (on files / directories) 
-inotifyEvent :: STM.ServerMessages -> Event -> IO ()
-inotifyEvent messages e = do
-  case e of
+inotifyEvent :: FilePath -> STM.ServerMessages -> Event -> IO ()
+inotifyEvent rootPath messages event = do
+  case event of
     -- A file was modified
     -- TODO: Load the changes (unless the modification was instigated by us in which case we're already up to date)
     Modified False maybePath -> do
@@ -135,10 +143,20 @@ inotifyEvent messages e = do
     fromMaybeFilePath = maybe "Unknown file" $ \filename -> "'" `append` pack filename `append` "'"
     
     enqueue = STM.Messages.enqueueServerMessage messages
-    unloadFiles event = enqueue $ ServerReloadFiles event []
-    reloadWatchPath = enqueue ServerReloadWatchPath
-    loadFile event path = 
-      (enqueue $ ServerLoadFile event path)
+    unloadFiles e = enqueue $ ServerReloadFiles e []
+    reloadWatchPath = do
+      errorOrFiles <- try $ listAllFiles rootPath :: IO (Either IOError [FileInfo])
+      case errorOrFiles of
+        Left _      -> enqueue $ ServerReloadFiles MovedOutRootDirectory [] 
+        Right files -> enqueue $ ServerReloadWatchPath files 
+    loadFile e path = 
+      (enqueue $ ServerLoadFile e path)
       >> Observer.FileLoader.loadFileContents messages path
-    unloadFile event path = enqueue $ ServerUnloadFile event path
-    loadModifications path = return () :: IO ()-- TODO
+    unloadFile e path = enqueue $ ServerUnloadFile e path
+    loadModifications path = return () :: IO () -- TODO
+
+-- List all files in the watch directory
+listAllFiles :: FilePath -> IO [FileInfo]
+listAllFiles rootPath = (liftM $ filter $ not . isDots) $ getDirectoryContents rootPath
+  where
+    isDots f = (endswith "/." f) || (endswith "/.." f) || (f == "..") || (f == ".")

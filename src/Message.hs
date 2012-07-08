@@ -24,7 +24,7 @@ data Message = Acknowledge
   deriving (Show, Read)
 
 -- Server generated messages (to be processed locally)
-data ServerMessage = ServerReloadWatchPath
+data ServerMessage = ServerReloadWatchPath [FileInfo]
                    | ServerReloadFiles StorageEvent [FileInfo]
                    | ServerLoadFile StorageEvent FileInfo
                    | ServerLoadFileContents FileInfo Text

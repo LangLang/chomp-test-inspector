@@ -1,16 +1,18 @@
 module STM.FileStore (FileStore, rootPath, newIO, allFiles, clear, reload, load, unload) where
 
+-- The file store is a cache that reflects the contents of a location on some storage device.
+-- Its only responsibility is storage and synchronicity (atomicity) of storage access - the file
+-- store itself does not get involved in physical disk access or messaging tasks.   
+
 -- Standard modules
 import Control.Monad (liftM, (<=<), zipWithM, filterM)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TVar as TVar
 import Data.Text (Text)
 import Data.Maybe (isNothing)
-import Data.String.Utils (endswith)
 import qualified Data.STM.TList as TList
 import qualified Data.STM.TCursor as TCursor
 import Data.STM.TCursor (TCursor)
-import qualified System.Directory as Dir
 
 -- Application modules
 import FileStore
@@ -48,20 +50,14 @@ clear fs = do
     fsFiles = files fs
 
 -- Reload the file store
-reload :: FileStore -> IO [FileInfo]
-reload fs = do
-  -- Get the initial contents of the directory being watched
-  directoryContents <- (liftM $ filter $ not . isDots) $ Dir.getDirectoryContents fsRootPath
-  elements <- zipWithM createFileStoreElement directoryContents $ repeat Nothing
+reload :: FileStore -> [FileInfo] -> IO ()
+reload fs filesToLoad = do
+  elements <- zipWithM createFileStoreElement filesToLoad $ repeat Nothing
   _ <- clear fs
   _ <- atomically $ do
-    filesList <- readTVar fsFiles
+    filesList <- readTVar $ files fs
     flip TList.appendList elements filesList
-  allFiles fs
-  where 
-    isDots f = (endswith "/." f) || (endswith "/.." f) || (f == "..") || (f == ".")
-    fsFiles = files fs
-    fsRootPath = rootPath fs
+  return ()
     
 -- Load a single file into the file store
 load :: FileStore -> FileInfo -> IO ()
