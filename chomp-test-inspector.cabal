@@ -45,8 +45,9 @@ executable chomp-test-inspector
   hs-source-dirs: src
   other-modules: WebsocketApp FileStore Message WebApp
                  TestInspectorPage STM.FileStore STM.Messages
-                 Observer.DirectoryWatch Observer.FileWatch MessageDispatch
-                 ServerState STM.Clients Handler.StorageHandler
+                 Observer.DirectoryWatch Observer.FileWatch
+                 Observer.ExecutableWatch MessageDispatch ServerState
+                 STM.Clients Handler.StorageHandler
   ghc-prof-options:
   ghc-shared-options:
   hugs-options:

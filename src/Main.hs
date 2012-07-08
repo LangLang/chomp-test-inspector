@@ -34,12 +34,6 @@ main = do
     else if head args == "--help"
       then printUsage >> System.Exit.exitSuccess
       else return $ if length args == 2 then args else [head args, defaultExecPath]
-    
-  -- Try to find the executable tool specified in the arguments
-  maybeAbsExecPath <- System.Directory.findExecutable execPath
-  if isNothing maybeAbsExecPath
-    then putStrLn ("Executable '" ++ execPath ++ "' could not be found. The executable will not be run.")
-    else return () 
   
   -- Instantiate shared resources
   clients <- STM.Clients.newIO
@@ -47,7 +41,8 @@ main = do
   serverMessages <- STM.Messages.newIO :: IO STM.ServerMessages
   clientMessages <- STM.Messages.newIO :: IO STM.Messages
   serverStateT <- newTVarIO Active :: IO (TVar ServerState)
-  -- Run asynchronous observers
+    
+  -- Run asynchronous observer: Directory watch
   maybeObserverId <- Observer.DirectoryWatch.forkDirectoryWatch fileStore serverMessages
   case maybeObserverId of
     Just observerId -> do
@@ -61,7 +56,17 @@ main = do
       -- Stop the asynchronous observers
       Observer.DirectoryWatch.killDirectoryWatch observerId
     Nothing ->
-      return ()
+      System.Exit.exitWith $ System.Exit.ExitFailure 1
+  
+  -- Try to find the executable tool specified in the arguments
+  maybeAbsExecPath <- System.Directory.findExecutable execPath
+  if isNothing maybeAbsExecPath
+    then putStrLn ("Executable '" ++ execPath ++ "' could not be found. The executable will not be run.")
+    else return ()
+  
+  -- Run asynchronous observer: Executable watch
+  -- TODO...
+  
   where
     defaultExecPath = "chomp"
     printUsage = putStrLn "USAGE: chomp-test-inspector [watchPath] [executablePath]"
