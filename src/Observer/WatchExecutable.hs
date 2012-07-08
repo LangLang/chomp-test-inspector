@@ -1,11 +1,12 @@
---{-# LANGUAGE OverloadedStrings, CPP #-}
-module Observer.WatchExecutable (WatchExecutableHandle) where
+{-# LANGUAGE CPP #-}
+module Observer.WatchExecutable (WatchExecutableHandle, forkObserver, killObserver) where
 
 -- Standard modules
+--import Prelude hiding (putStrLn)
+--import Data.Text hiding (map, filter)
+--import Data.Text.IO (putStrLn, hPutStrLn)
 import System.INotify (INotify, EventVariety(..), Event(..), initINotify, killINotify, addWatch)
-#ifdef __GLASGOW_HASKELL__
-import qualified GHC.IO.Exception as Exception
-#endif
+import Control.Monad (liftM)
 
 -- Types
 type WatchExecutableHandle = INotify
@@ -16,9 +17,9 @@ forkObserver execPath = liftM Just $ runINotify execPath
   where    
     -- Run inotify on the watch directory
     runINotify :: FilePath -> IO WatchExecutableHandle
-    runINotify execPath = do
+    runINotify p = do
       inotify <- initINotify
-      _       <- addWatch inotify masks execPath $ inotifyEvent execPath messages
+      _       <- addWatch inotify masks p inotifyEvent
       return inotify
       where  
         masks = [ Modify, Attrib, Move, MoveSelf, Create, DeleteSelf ]
@@ -32,16 +33,16 @@ inotifyEvent :: Event -> IO ()
 inotifyEvent event = do
   case event of
     -- The executable was modified
-    Modified False maybePath -> do
-      case maybePath of
-        Just path -> "The executable '" `append` pack p `append` "' was modified."
+    Modified False maybePath ->
+      putStrLn $ case maybePath of
+        Just p -> "The executable '" ++ p ++ "' was modified."
         Nothing -> "The executable was modified."
         
     -- The executable's attributes have changed
-    Attributes False maybePath -> do
-      case maybePath of
-        Just p -> putStrLn $ "The executable '" `append` pack p `append` "'s attributes has changed."   
-        Nothing -> putStrLn $ "The executable's attributes has changed."
+    Attributes False maybePath ->
+      putStrLn $ case maybePath of
+        Just p -> "The executable '" ++ p ++ "'s attributes has changed."   
+        Nothing -> "The executable's attributes has changed."
        
     -- The executable was moved
     MovedSelf _ -> do
@@ -49,7 +50,7 @@ inotifyEvent event = do
     
     -- The executable has been newly created 
     Created False p -> do
-      putStrLn $ "The executable '" `append` pack p `append` "' was created."
+      putStrLn $ "The executable '" ++ p ++ "' was created."
      
     -- The executable was deleted
     --Deleted False p -> do 

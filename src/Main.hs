@@ -6,7 +6,6 @@ import Network.Wai.Handler.WebSockets (interceptWith)
 import Network.WebSockets(defaultWebSocketsOptions)
 import Control.Concurrent (forkIO, yield)
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
-import Data.Maybe (isNothing)
 import qualified System.Environment
 import qualified System.Exit 
 import qualified System.Directory
@@ -17,6 +16,7 @@ import WebsocketApp
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.FileStore as STM.FileStore
 import qualified Observer.WatchDirectory
+import qualified Observer.WatchExecutable
 import qualified STM.Messages as STM (Messages, ServerMessages)
 import qualified STM.Messages
 import qualified STM.Clients
@@ -43,31 +43,34 @@ main = do
   serverStateT <- newTVarIO Active :: IO (TVar ServerState)
     
   -- Run asynchronous observer: Watch directory
-  maybeObserverId <- Observer.WatchDirectory.forkObserver fileStore serverMessages
-  case maybeObserverId of
-    Just observerId -> do
-      -- Dispatch messages
-      _ <- forkIO $ loopDispatch serverStateT clients fileStore serverMessages clientMessages
-      -- Run the front controllers
-      Warp.runSettings (webAppSettings clients fileStore serverMessages clientMessages) webApp
-      -- Terminate dispatcher elegantly (wait until message queues are empty) 
-      atomically $ writeTVar serverStateT Terminating
-      waitUntilTerminated serverStateT
-      -- Stop the asynchronous observers
-      Observer.WatchDirectory.killObserver observerId
-    Nothing ->
-      System.Exit.exitWith $ System.Exit.ExitFailure 1
+  maybeWatchDirectoryHandle <- Observer.WatchDirectory.forkObserver fileStore serverMessages
+  watchDirectoryHandle <- case maybeWatchDirectoryHandle of
+    Just handle -> return handle
+    Nothing -> System.Exit.exitWith $ System.Exit.ExitFailure 1
   
   -- Try to find the executable tool specified in the arguments
-  putStrLn ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
   maybeAbsExecPath <- System.Directory.findExecutable execPath
-  if isNothing maybeAbsExecPath
-    then putStrLn ("Executable '" ++ execPath ++ "' could not be found. The executable will not be run.")
-    else return ()
-  
   -- Run asynchronous observer: Watch executable
-  -- TODO...
+  maybeWatchExecutableHandle <- case maybeAbsExecPath of
+    Nothing -> putStrLn ("Executable '" ++ execPath ++ "' could not be found. The executable will not be run.")
+      >> return Nothing
+    Just absExecPath -> Observer.WatchExecutable.forkObserver absExecPath
   
+  -- Dispatch messages
+  _ <- forkIO $ loopDispatch serverStateT clients fileStore serverMessages clientMessages
+  
+  -- Run the front controllers
+  Warp.runSettings (webAppSettings clients fileStore serverMessages clientMessages) webApp
+  
+  -- Stop the asynchronous observers
+  case maybeWatchExecutableHandle of
+    Just handle -> Observer.WatchExecutable.killObserver handle
+    Nothing -> return ()
+  Observer.WatchDirectory.killObserver watchDirectoryHandle
+  
+  -- Terminate dispatcher elegantly (wait until message queues are empty) 
+  atomically $ writeTVar serverStateT Terminating
+  waitUntilTerminated serverStateT
   where
     defaultExecPath = "chomp"
     printUsage = putStrLn "USAGE: chomp-test-inspector [watchPath] [executablePath]"
