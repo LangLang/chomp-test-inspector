@@ -36,28 +36,16 @@ dispatch serverStateT clients fileStore serverMessages clientMessages = do
               else return Empty
   -- Process the message, dispatching it to the relevant handler
   case dispatchMessage of
-    ServerMessage message -> (processServerMessage clients fileStore message) >> return True
-    Message message -> (processClientMessage clients fileStore message) >> return True
+    ServerMessage message -> (processServerMessage fileStore serverMessages clients message) >> return True
+    Message message -> (processClientMessage fileStore serverMessages clients message) >> return True
     Empty -> return False
 
-processServerMessage :: Clients -> STM.FileStore -> ServerMessage -> IO ()
-processServerMessage clients fileStore message =
-  case message of
-    -- Server messages
-    ServerReloadFiles event files -> reloadFiles event files
-    ServerLoadFile storageEvent fileInfo -> loadFile storageEvent fileInfo
-    ServerUnloadFile storageEvent fileInfo -> unloadFile storageEvent fileInfo
-    ServerLoadFileContents fileInfo fileContents -> loadFileContents fileInfo fileContents
-    -- Unknown message (error)
-    _ -> undefined
-  where
-    reloadFiles = Handler.StorageHandler.reloadFiles clients fileStore
-    loadFile = Handler.StorageHandler.loadFile clients fileStore
-    loadFileContents = Handler.StorageHandler.loadFileContents clients fileStore
-    unloadFile = Handler.StorageHandler.unloadFile clients fileStore
+processServerMessage :: STM.FileStore -> STM.ServerMessages -> Clients -> ServerMessage -> IO ()
+processServerMessage fileStore serverMessages clients message =
+  Handler.StorageHandler.handler fileStore serverMessages clients message
 
-processClientMessage :: Clients -> STM.FileStore -> Message -> IO ()
-processClientMessage clients fileStore message =
+processClientMessage :: STM.FileStore -> STM.ServerMessages -> Clients -> Message -> IO ()
+processClientMessage fileStore serverMessages clients message =
   case message of
     -- Unknown message (error)
     _ -> undefined
