@@ -17,8 +17,8 @@ data DispatchMessage = ServerMessage ServerMessage | Message Message | Empty
 
 -- Dispatches messages from either a client or the server itself to the relevant message handler
 -- Returns false if no messages are available to be processed
-dispatch :: TVar ServerState -> Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> IO Bool
-dispatch serverStateT clients fileStore serverMessages clientMessages = do
+dispatch :: TVar ServerState -> Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> Maybe FilePath -> IO Bool
+dispatch serverStateT clients fileStore serverMessages clientMessages maybeExecPath = do
   -- If there are any messages in the server queue, process them first
   dispatchMessage <- atomically $ do
     serverMessage <- tryReadTChan serverMessages
@@ -36,13 +36,13 @@ dispatch serverStateT clients fileStore serverMessages clientMessages = do
               else return Empty
   -- Process the message, dispatching it to the relevant handler
   case dispatchMessage of
-    ServerMessage message -> (processServerMessage fileStore serverMessages clients message) >> return True
+    ServerMessage message -> (processServerMessage fileStore serverMessages clients maybeExecPath message) >> return True
     Message message -> (processClientMessage fileStore serverMessages clients message) >> return True
     Empty -> return False
 
-processServerMessage :: STM.FileStore -> STM.ServerMessages -> Clients -> ServerMessage -> IO ()
-processServerMessage fileStore serverMessages clients message =
-  Handler.StorageHandler.handler fileStore serverMessages clients message
+processServerMessage :: STM.FileStore -> STM.ServerMessages -> Clients -> Maybe FilePath -> ServerMessage -> IO ()
+processServerMessage fileStore serverMessages clients maybeExecPath message =
+  Handler.StorageHandler.handler fileStore serverMessages clients maybeExecPath message
 
 processClientMessage :: STM.FileStore -> STM.ServerMessages -> Clients -> Message -> IO ()
 processClientMessage fileStore serverMessages clients message =

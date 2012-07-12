@@ -54,10 +54,10 @@ main = do
   maybeWatchExecutableHandle <- case maybeAbsExecPath of
     Nothing -> putStrLn ("Executable '" ++ execPath ++ "' could not be found. The executable will not be run.")
       >> return Nothing
-    Just absExecPath -> Observer.WatchExecutable.forkObserver absExecPath
+    Just absExecPath -> Observer.WatchExecutable.forkObserver serverMessages absExecPath
   
   -- Dispatch messages
-  _ <- forkIO $ loopDispatch serverStateT clients fileStore serverMessages clientMessages
+  _ <- forkIO $ loopDispatch serverStateT clients fileStore serverMessages clientMessages maybeAbsExecPath
   
   -- Run the front controllers
   Warp.runSettings (webAppSettings clients fileStore serverMessages clientMessages) webApp
@@ -76,11 +76,11 @@ main = do
     printUsage = putStrLn "USAGE: chomp-test-inspector [watchPath] [executablePath]"
 
 -- Loop the dispatch method until the termination flag is true and the message queues are both empty
-loopDispatch :: TVar ServerState -> Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> IO ()
-loopDispatch serverStateT clients fileStore serverMessages clientMessages = loop
+loopDispatch :: TVar ServerState -> Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> Maybe FilePath -> IO ()
+loopDispatch serverStateT clients fileStore serverMessages clientMessages maybeExecPath = loop
   where
     loop = do
-      messagesAvailable <- dispatch serverStateT clients fileStore serverMessages clientMessages
+      messagesAvailable <- dispatch serverStateT clients fileStore serverMessages clientMessages maybeExecPath
       if messagesAvailable
         then loop
         else do

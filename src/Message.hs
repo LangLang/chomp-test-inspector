@@ -28,6 +28,7 @@ data ServerMessage = ServerReloadFiles StorageEvent [FileInfo]
                    | ServerLoadFileContents FileInfo Text
                    | ServerUnloadFile StorageEvent FileInfo
                    | ServerModifiedFile
+                   | ServerExecuteAll
   deriving (Show, Read)
 
 -- Notifications can be attached to certain messages
