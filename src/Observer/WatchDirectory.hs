@@ -150,12 +150,8 @@ inotifyEvent rootPath messages event = do
       errorOrFiles <- try $ listAllFiles rootPath :: IO (Either IOError [FileInfo])
       case errorOrFiles of
         Left _      -> enqueue $ ServerReloadFiles MovedOutRootDirectory [] 
-        Right files ->
-          (enqueue $ ServerReloadFiles RestoredRootDirectory files)
-          >> (Observer.WatchFile.loadFilesContents messages rootPath files) 
-    loadFile e path = 
-      (enqueue $ ServerLoadFile e path)
-      >> Observer.WatchFile.loadFileContents messages rootPath path
+        Right files -> enqueue $ ServerReloadFiles RestoredRootDirectory files
+    loadFile e path = enqueue $ ServerLoadFile e path      
     unloadFile e path = enqueue $ ServerUnloadFile e path
     loadModifications path = return () :: IO () -- TODO
 
