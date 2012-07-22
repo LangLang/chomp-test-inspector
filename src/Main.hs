@@ -99,8 +99,7 @@ waitUntilTerminated serverStateT =
 -- Repeat an IO action until another IO operation returns true 
 foreverUntilIO :: IO () -> IO Bool -> IO ()
 foreverUntilIO loop check = do
-  _ <- loop
-  cond <- check
+  cond <- loop >> check
   if cond
     then return ()
     else foreverUntilIO loop check
