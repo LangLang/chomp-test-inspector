@@ -1,7 +1,7 @@
   var 
     Message = adt('Acknowledge','Notify','ReloadFiles','LoadFile','UnloadFile','PatchFile','ParseError'),
-    // Not used: ReloadWatchPath
     StorageEvent = adt(
+      'WatchInstalled',
       'Connected',
       'ModifiedFile',
       'ModifiedDirectory',

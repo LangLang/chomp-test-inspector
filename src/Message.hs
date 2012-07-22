@@ -37,7 +37,8 @@ data Notification = Info String
   deriving (Show, Read)
 
 -- Certain messages carry storage events
-data StorageEvent = Connected
+data StorageEvent = WatchInstalled
+                  | Connected
                   | ModifiedFile
                   | ModifiedDirectory
                   | MovedOutFile

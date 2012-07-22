@@ -24,7 +24,7 @@ import qualified STM.FileStore
 import qualified STM.FileStore as STM (FileStore)
 import qualified STM.Messages
 import qualified STM.Messages as STM (ServerMessages)
-import qualified Observer.WatchFile
+--import qualified Observer.WatchFile
 
 -- Types
 type WatchDirectoryHandle = INotify
@@ -47,10 +47,13 @@ forkObserver fileStore messages = do
         Nothing -> ioError e
     Right files ->
       -- Load all files and return the directory's observer
-      STM.FileStore.reload fileStore files
-      >> (Observer.WatchFile.loadFilesContents messages rootPath files) 
+      -- TODO: is there an inotify event we can watch to enqueue this message instead
+      (enqueue $ ServerReloadFiles WatchInstalled files) 
       >> (liftM Just $ runINotify rootPath)
-  where    
+  where
+    -- Enqueue a server message
+    enqueue = STM.Messages.enqueueServerMessage messages
+    
     -- Run inotify on the watch directory
     runINotify :: FilePath -> IO WatchDirectoryHandle
     runINotify rootPath = do
