@@ -82,8 +82,10 @@
       },
       getCaretOffset = function(domElement) {
         if (!window.getSelection)
-          return 0;
+          return null;
         var selection = window.getSelection();
+        if (!selection.containsNode(domElement)) 
+          return null;
         if (selection.focusNode === domElement)
           return getFocusInSelection(selection);
         if (selection.focusNode == null)
@@ -91,14 +93,16 @@
         return getParentNodeOffset(domElement, selection.focusNode) + getFocusInSelection(selection);
       },
       setCaretOffset = function(domElement, offset) {
+        if (!window.getSelection)
+          return;
         var
           selection = window.getSelection(),
           focusPoint = getFocusPointAtOffset(domElement, offset),
           range = document.createRange();
         // Remove existing selections
-        if (window.getSelection)
-          if (selection.rangeCount > 0) 
-            selection.removeAllRanges();
+        if (selection.rangeCount > 0)
+          selection.removeAllRanges();
+        // Set the new selection to the focus point
         range.setStart(focusPoint[0], focusPoint[1]);
         range.setEnd(focusPoint[0], focusPoint[1]);
         selection.addRange(range);
