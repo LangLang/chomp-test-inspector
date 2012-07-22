@@ -1,6 +1,6 @@
 /* Special effects (these are hard to write in Cassius) */
 .disable-overlay {
-    background:
+  background:
     -ms-radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 0 0,
     -ms-radial-gradient(rgba(255,255,255,.1) 15%, transparent 80%) 3px 3px;
   background:

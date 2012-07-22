@@ -1,6 +1,10 @@
   var Editor = Editor || {};
   (function(html){
     var 
+      createDropDownLog = function() {
+        return html.div({class: "editor-log editor-log-empty"}, 
+          html.div({class: "editor-log-dropdown"}));
+      },
       createEditor = function(fileName) {
         return html.div({class: "editor"},
           html.div({class: "editor-source"},
@@ -9,7 +13,8 @@
           ),
           html.div({class: "editor-result"},
             html.input({class: "editor-result-filename", readonly: "readonly", value: fileName + ".??? (TODO)"}),
-            html.editor()
+            html.editor(),
+            createDropDownLog()
           ),
           html.div({style: "clear:both"})
         );
