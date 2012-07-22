@@ -3,6 +3,7 @@ module Handler.StorageHandler (handler) where
 -- System modules
 import Data.Maybe (isJust, fromJust)
 import qualified System.FilePath
+import qualified System.IO
 
 -- Application modules
 import Message
@@ -23,7 +24,8 @@ handler fs sm c maybeExecPath message = case message of
     >> (STM.Clients.broadcastMessage c $ ReloadFiles event files)
     >> (Observer.WatchFile.loadFilesContents sm (STM.FileStore.rootPath fs) files)
     >> if isJust maybeExecPath 
-      then Observer.WatchExecutable.runEach 
+      then Observer.WatchExecutable.runEach
+        sm 
         (fromJust maybeExecPath) 
         (STM.FileStore.rootPath fs) $ 
           filter ((== ".source") . System.FilePath.takeExtension) files
@@ -35,7 +37,7 @@ handler fs sm c maybeExecPath message = case message of
     >> (STM.Clients.broadcastMessage c $ LoadFile event file)
     >> (Observer.WatchFile.loadFileContents sm (STM.FileStore.rootPath fs) file)
     >> if System.FilePath.takeExtension file == ".source" && isJust maybeExecPath 
-      then Observer.WatchExecutable.run (fromJust maybeExecPath) (STM.FileStore.rootPath fs) file
+      then Observer.WatchExecutable.run sm (fromJust maybeExecPath) (STM.FileStore.rootPath fs) file
       else return ()
 
   -- Load a file's contents
@@ -54,13 +56,17 @@ handler fs sm c maybeExecPath message = case message of
   -- Execute the tool on all files
   ServerExecuteAll -> do
     files <- STM.FileStore.allFiles fs
-    Observer.WatchExecutable.runEach 
+    Observer.WatchExecutable.runEach
+      sm
       (fromJust maybeExecPath) 
       (STM.FileStore.rootPath fs) $ 
         filter ((== ".source") . System.FilePath.takeExtension) files
+        
+  -- Notify clients of log messages
+  ServerNotify notification -> (STM.Clients.broadcastMessage c $ Notify notification)
 
   -- Unknown message
-  _ -> undefined
+  _ -> System.IO.hPutStrLn System.IO.stderr $ "Unhandled server message: " ++ show message
 
 --loadDiff :: Clients -> STM.FileStore -> FileInfo -> IO ()
 --loadDiff clients fileStore file =

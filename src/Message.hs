@@ -27,7 +27,8 @@ data Message = Acknowledge
 --type TimeStampedMessage = (UTCTime, Message)
 
 -- Server generated messages (to be processed locally)
-data ServerMessage = ServerReloadFiles StorageEvent [FileInfo]
+data ServerMessage = ServerNotify Notification
+                   | ServerReloadFiles StorageEvent [FileInfo]
                    | ServerLoadFile StorageEvent FileInfo
                    | ServerLoadFileContents FileInfo Text
                    | ServerUnloadFile StorageEvent FileInfo
@@ -38,7 +39,7 @@ data ServerMessage = ServerReloadFiles StorageEvent [FileInfo]
 -- Notifications can be attached to certain messages
 data Notification = Info String
                   | ClientDisconnected String
-                  | ProcessOutput FileInfo ProcessLog
+                  | ProcessMessage FileInfo ProcessLog
   deriving (Show, Read)
   
 -- The log messages from a running process may be sent as a notification
