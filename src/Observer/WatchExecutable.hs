@@ -6,8 +6,13 @@ module Observer.WatchExecutable (WatchExecutableHandle, forkObserver, killObserv
 --import Data.Text.IO (putStrLn, hPutStrLn)
 import System.INotify (INotify, EventVariety(..), Event(..), initINotify, killINotify, addWatch)
 import Control.Monad (liftM)
-import qualified System.Process
-import qualified System.FilePath
+import Control.Concurrent as C
+import qualified System.IO
+import qualified System.Process as P
+import qualified System.Exit
+--import qualified System.FilePath
+import System.FilePath ((</>))
+
 
 -- Application modules
 import Message
@@ -83,20 +88,83 @@ inotifyEvent messages event = do
      -- TODO: prevent this message from being repeatedly enqueued
      --       there should be something like an "enqueueOnce" function that prevents duplicates
     executeAll = enqueue ServerExecuteAll
-    
-run :: FilePath -> FilePath -> FilePath -> IO ()
-run execPath rootPath path = do 
-  processHandle <- System.Process.runProcess 
-    execPath 
-    [relPath] -- ["(" ++ relPath ++ " ->: (output -> (dir -> \"out/\")) -> _):_"]
-    Nothing -- Working directory
-    Nothing -- Environment
-    Nothing -- stdin
-    Nothing -- stdout
-    Nothing -- stderr
-  return ()
-  where
-    relPath = rootPath `System.FilePath.combine` path
 
+-- Run the executable, adding all log messages to the message queue
+run :: FilePath -> FilePath -> FilePath -> IO ()
+run execPath rootPath path = do
+  -- TODO: try/catch ?
+  (_, Just hStdOut, Just hStdErr, hProcess) <- 
+    P.createProcess (P.proc execPath [relPath, outputPath])
+    { P.std_out = P.CreatePipe, P.std_err = P.CreatePipe }
+  readProcessStreams hProcess hStdOut hStdErr
+  where
+    relPath = rootPath </> path
+    outputPath = relPath ++ ".output"
+
+-- Run the executable on a list of file paths
 runEach :: FilePath -> FilePath -> [FilePath] -> IO ()
-runEach execPath rootPath paths = mapM_ (run execPath rootPath) paths  
+runEach execPath rootPath paths = mapM_ (run execPath rootPath) paths
+
+-- Repeat an IO action every time an IO operation returns true until it doesn't 
+foreverWhileIO :: IO Bool -> IO () -> IO ()
+foreverWhileIO check loop = do
+  cond <- check
+  if cond
+    then loop >> (foreverWhileIO check loop)
+    else return ()
+
+readProcessStreams :: P.ProcessHandle -> System.IO.Handle -> System.IO.Handle -> IO ()
+readProcessStreams hProcess hStdOut hStdErr = do
+  -- Note: The -threaded flag is needed to avoid blocking all threads while running this function
+  --      (See System.Process.readProcess)
+   
+  -- TODO: Handle the case where the process doesn't terminate (manually signal process to be terminated)
+   
+  -- TODO: Needed?
+  -- hSetBinaryMode hStdOut False
+  -- hSetBinaryMode hStdErr False
+  
+  -- Set the buffering mode to line buffering by default
+  -- TODO: Not sure whether this makes any difference on the read end of the pipe.
+  --       Ideally this buffering mode should probably also be set inside the subprocess.
+  System.IO.hSetBuffering hStdOut System.IO.LineBuffering
+  System.IO.hSetBuffering hStdErr System.IO.LineBuffering
+  
+  -- Fork a thread to listen for output on the two handles (stdout + stderr)
+  logChan <- newChan
+  
+  semStdOut <- newEmptyMVar
+  _ <- forkIO $
+    -- TODO: try/catch
+    (foreverWhileIO (liftM not $ System.IO.hIsEOF hStdOut) $ do 
+      line <- System.IO.hGetLine hStdOut
+      writeChan logChan $ "StdOut: " ++ line)
+    >> (putMVar semStdOut ()) 
+  
+  semStdErr <- newEmptyMVar
+  _ <- forkIO $
+    -- TODO: try/catch
+    (foreverWhileIO (liftM not $ System.IO.hIsEOF hStdErr) $ do 
+      line <- System.IO.hGetLine hStdErr
+      writeChan logChan $ "StdErr: " ++ line)
+    >> (putMVar semStdErr ()) 
+  
+  -- Block until both stdout and stderr are closed
+  _ <- 
+    (takeMVar semStdOut)
+    >> (takeMVar semStdErr)
+    >> (System.IO.hClose hStdOut) 
+    >> (System.IO.hClose hStdErr)
+  
+  -- Output the results for now
+  --logMessages <- (C.getChanContents logChan)
+  --mapM_ putStrLn logMessages
+  putStrLn "We're all done"
+  
+  -- Get the exit code for the process
+  exitCode <- P.waitForProcess hProcess
+  -- TODO: LogEnd exitCode 
+  case exitCode of
+   System.Exit.ExitSuccess   -> return ()
+   System.Exit.ExitFailure _ -> return ()
+
