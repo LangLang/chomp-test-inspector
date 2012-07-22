@@ -1,4 +1,4 @@
-module Message (Message(..), ServerMessage(..), Notification(..), StorageEvent(..), Patch(..)) where
+module Message (Message(..), ServerMessage(..), Notification(..), ProcessLog(..), StorageEvent(..), Patch(..)) where
 
 {- 
   TODO: Possibly split Message into ServerMessage and ClientMessage or perhaps StorageMessage and
@@ -7,6 +7,7 @@ module Message (Message(..), ServerMessage(..), Notification(..), StorageEvent(.
 
 -- Standard modules
 import Data.Text
+import System.Exit (ExitCode)
 
 -- Application modules
 import FileStore
@@ -22,6 +23,9 @@ data Message = Acknowledge
              | ParseError String
   deriving (Show, Read)
 
+-- TODO
+--type TimeStampedMessage = (UTCTime, Message)
+
 -- Server generated messages (to be processed locally)
 data ServerMessage = ServerReloadFiles StorageEvent [FileInfo]
                    | ServerLoadFile StorageEvent FileInfo
@@ -34,6 +38,14 @@ data ServerMessage = ServerReloadFiles StorageEvent [FileInfo]
 -- Notifications can be attached to certain messages
 data Notification = Info String
                   | ClientDisconnected String
+                  | ProcessOutput FileInfo ProcessLog
+  deriving (Show, Read)
+  
+-- The log messages from a running process may be sent as a notification
+data ProcessLog = LogStart 
+                | LogInfo String
+                | LogError String
+                | LogEnd ExitCode -- TODO: add exit code?
   deriving (Show, Read)
 
 -- Certain messages carry storage events

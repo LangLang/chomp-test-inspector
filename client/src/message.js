@@ -20,4 +20,5 @@
       'DeletedRootDirectory',
       'UnmountedRootDirectory',
       'Error'
-    );
+    ),
+    ProcessLog = adt('LogStart', 'LogInfo', 'LogError', 'LogEnd');
