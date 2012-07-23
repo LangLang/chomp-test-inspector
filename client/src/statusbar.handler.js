@@ -20,10 +20,11 @@
           DeletedFile: function() { StatusBar.info("The file ", html.code(file), " has been deleted"); },
           MovedOutFile: function() { StatusBar.info("The file ", html.code(file), " was moved out of the project"); }
         })(storageEvent);
-      }
+      },
       /*
       RenamedFile: function(sourceFile, targetFile) {
         StatusBar.info("The file ", html.code(sourceFile), " has been renamed to ", html.code(targetFile));
-      } //*/
+      },//*/
+      ConnectionClosed: function() { StatusBar.important("The connection to the server was closed."); }
     });
   })(html.evalCons);

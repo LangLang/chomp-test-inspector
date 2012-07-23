@@ -98,7 +98,7 @@
           Just: function(contents) { 
             $editorInput
               .text(contents)
-              .attr('contenteditable', isResult);
+              .attr('contenteditable', !isResult);
             Editor.highlight($editorInput.get(0));
           },
           Nothing: function() {
@@ -126,6 +126,10 @@
             .find(".supersimple-editor-input")
               .text("")
               .attr('contenteditable', false);
+      },
+      ConnectionClosed: function() {
+        $("#editors").html("");
+        disableEditor();
       }
     }));
   })(adt({ editor: supersimple.editor.html }, html.evalCons));

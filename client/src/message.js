@@ -1,5 +1,9 @@
-  var 
-    Message = adt('Acknowledge','Notify','ReloadFiles','LoadFile','UnloadFile','PatchFile','ParseError'),
+  var
+    Message = adt(
+      // Client-server messages
+      'Acknowledge','Notify','ReloadFiles','LoadFile','UnloadFile','PatchFile','ParseError', 
+      // Other messages (not used on server)
+      'ConnectionClosed'),
     StorageEvent = adt(
       'WatchInstalled',
       'Connected',

@@ -14,6 +14,10 @@
         console.log("Message received...", event);
         _publish(handlers, adt.deserialize(event.data));
       };
+      ws.onclose = function() {
+        console.log("Connection closed...");
+        _publish(handlers, Message.ConnectionClosed());
+      };
     };
     // Send a message to the server
     MessageService.send = function(ws, message) {
