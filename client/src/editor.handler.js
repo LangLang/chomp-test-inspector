@@ -44,7 +44,7 @@
           baseFilename = isResult? file.slice(0, file.length - ".output".length) : file,
           $editors = $("#editors"),
           $editor = $editors.find(".editor[data-filename='" + baseFilename + "']"),
-          selectorPrefix = (isResult? ".editor-result" : ".editor-source"),
+          selectorPrefix = isResult? ".editor-result" : ".editor-source",
           $editorFilename;
         if ($editor.length == 0)
           $editor = $(createEditor(baseFilename)).appendTo($editors);
@@ -84,23 +84,27 @@
         loadFile(file);
       },
       LoadFileContents: function(file, maybeContents) {
-        var $editor = $("#editors")
-          .find(".editor-source-filename[value='" + file + "']")
-          .closest(".editor-source")
-          .find(".supersimple-editor-input");
-        if ($editor.length !== 1)
+        var
+          isResult = isResultFile(file),
+          baseFilename = isResult? file.slice(0, file.length - ".output".length) : file,
+          $editors = $("#editors"),
+          $editor = $editors.find(".editor[data-filename='" + baseFilename + "']"),
+          selector = isResult? ".editor-result" : ".editor-source",
+          $editorInput = $editor.find(selector).find(".supersimple-editor-input");
+
+        if ($editor.length !== 1 || $editorInput.length !== 1)
           return;        
         adt({
           Just: function(contents) { 
-            $editor
+            $editorInput
               .text(contents)
-              .attr('contenteditable', 'true');
-            Editor.highlight($editor.get(0));
+              .attr('contenteditable', isResult);
+            Editor.highlight($editorInput.get(0));
           },
           Nothing: function() {
-            $editor
+            $editorInput
               .text("")
-              .attr('contenteditable', 'false');
+              .attr('contenteditable', false);
           }
         })(maybeContents);
       },
@@ -110,14 +114,18 @@
           baseFilename = isResult? file.slice(0, file.length - ".output".length) : file,
           $editors = $("#editors"),
           $editor = $editors.find(".editor[data-filename='" + baseFilename + "']"),
-          thisPrefix = (isResult? ".editor-result" : ".editor-source"),
-          otherPrefix = (isResult? ".editor-source" : ".editor-result");
+          thisPrefix = isResult? ".editor-result" : ".editor-source",
+          otherPrefix = isResult? ".editor-source" : ".editor-result";
         if ($editor.length == 0)
           return;
         if ($editor.find(otherPrefix).hasClass('editor-unloaded'))
           $editor.remove();
         else
-          $editor.find(thisPrefix).addClass('editor-unloaded');
+          $editor
+            .find(thisPrefix).addClass('editor-unloaded')
+            .find(".supersimple-editor-input")
+              .text("")
+              .attr('contenteditable', false);
       }
     }));
   })(adt({ editor: supersimple.editor.html }, html.evalCons));
