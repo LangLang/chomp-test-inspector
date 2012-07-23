@@ -139,6 +139,9 @@ textarea::selection, textarea::-moz-selection, textarea::-webkit-selection
   position: relative
   width: 100%
 
+.editor-unloaded
+  display: none
+
 .editor-source, .editor-result
   float: left
   width: 50%
@@ -187,6 +190,7 @@ textarea::selection, textarea::-moz-selection, textarea::-webkit-selection
   padding: 15px 20px
   outline: none
   margin: 4px 0
+  //box-shadow: 6px 20px 8px -2px rgba(0, 0, 0, 0.2)
 
 .editor-log-dropdown
   display: inline-block

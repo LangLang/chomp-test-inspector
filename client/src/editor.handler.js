@@ -8,13 +8,13 @@
         );
       },
       createEditor = function(fileName) {
-        return html.div({class: "editor"},
-          html.div({class: "editor-source"},
+        return html.div({class: "editor", 'data-filename': fileName},
+          html.div({class: "editor-source editor-unloaded"},
             html.input({class: "editor-source-filename", value: fileName}),
             html.editor()
           ),
-          html.div({class: "editor-result"},
-            html.input({class: "editor-result-filename", readonly: "readonly", value: fileName + ".??? (TODO)"}),
+          html.div({class: "editor-result editor-unloaded"},
+            html.input({class: "editor-result-filename", readonly: "readonly", value: fileName + ".output"}),
             html.editor(),
             createDropDownLog()
           ),
@@ -36,7 +36,25 @@
         LogInfo: function(message) { return html.div({class: "editor-log-info"}, message); },
         LogError: function(message) { return html.div({class: "editor-log-error"}, message); },
         LogEnd: function(exitCode) { return html.div({class: "editor-log-end"}, "...Done (" + showExitCode(exitCode) + ")" ); }
-      });
+      }),
+      isResultFile = function(file) { return /\.output$/.test(file); },
+      loadFile = function(file) {
+        var
+          isResult = isResultFile(file),
+          baseFilename = isResult? file.slice(0, file.length - ".output".length) : file,
+          $editors = $("#editors"),
+          $editor = $editors.find(".editor[data-filename='" + baseFilename + "']"),
+          selectorPrefix = (isResult? ".editor-result" : ".editor-source"),
+          $editorFilename;
+        if ($editor.length == 0)
+          $editor = $(createEditor(baseFilename)).appendTo($editors);
+        $editorFilename = $editor.find(selectorPrefix + "-filename"),
+        $editor
+          .find(selectorPrefix)
+          .removeClass("editor-unloaded")
+          .find(selectorPrefix + "-input")
+          .empty()
+      };
 
     Editor.handler = adt.recursive(adt({
       Connected: enableEditor,
@@ -60,14 +78,10 @@
         var i;
         $("#editors").html("");
         for (i = 0; i < files.length; ++i)
-          $("#editors").append(createEditor(files[i]));
+          loadFile(files[i]);
       },
-      LoadFile: function(storageEvent, file) { 
-        $("#editors")
-          .find(".editor-source-filename[value='" + file + "']")
-          .closest(".editor")
-          .remove();
-        $("#editors").append(createEditor(file));
+      LoadFile: function(storageEvent, file) {
+        loadFile(file);
       },
       LoadFileContents: function(file, maybeContents) {
         var $editor = $("#editors")
