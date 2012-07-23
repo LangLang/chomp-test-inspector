@@ -140,7 +140,7 @@ textarea::selection, textarea::-moz-selection, textarea::-webkit-selection
   width: 100%
 
 .editor-unloaded
-  display: none
+  visibility: hidden
 
 .editor-source, .editor-result
   float: left
