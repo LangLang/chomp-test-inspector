@@ -105,10 +105,19 @@
         })(maybeContents);
       },
       UnloadFile: function(storageEvent, file) { 
-        $("#editors")
-          .find(".editor-source-filename[value='" + file + "']")
-          .closest(".editor")
-          .remove();
+        var
+          isResult = isResultFile(file),
+          baseFilename = isResult? file.slice(0, file.length - ".output".length) : file,
+          $editors = $("#editors"),
+          $editor = $editors.find(".editor[data-filename='" + baseFilename + "']"),
+          thisPrefix = (isResult? ".editor-result" : ".editor-source"),
+          otherPrefix = (isResult? ".editor-source" : ".editor-result");
+        if ($editor.length == 0)
+          return;
+        if ($editor.find(otherPrefix).hasClass('editor-unloaded'))
+          $editor.remove();
+        else
+          $editor.find(thisPrefix).addClass('editor-unloaded');
       }
     }));
   })(adt({ editor: supersimple.editor.html }, html.evalCons));
