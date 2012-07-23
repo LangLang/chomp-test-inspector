@@ -84,7 +84,7 @@
         if (!window.getSelection)
           return null;
         var selection = window.getSelection();
-        if (!selection.containsNode(domElement)) 
+        if (!selection.containsNode(domElement, true)) 
           return null;
         if (selection.focusNode === domElement)
           return getFocusInSelection(selection);
