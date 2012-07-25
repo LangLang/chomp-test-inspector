@@ -67,6 +67,7 @@ executable chomp-test-inspector
                   hinotify -any,
                   http-types -any,
                   mtl -any,
+                  operational-transformation -any,
                   process -any,
                   safe -any,
                   shakespeare -any,

@@ -32,7 +32,7 @@ data ServerMessage = ServerNotify Notification
                    | ServerLoadFile StorageEvent FileInfo
                    | ServerLoadFileContents FileInfo Text
                    | ServerUnloadFile StorageEvent FileInfo
-                   | ServerModifiedFile
+                   | ServerLoadModifications FileInfo
                    | ServerExecuteAll
   deriving (Show, Read)
 

@@ -156,7 +156,7 @@ inotifyEvent rootPath messages event = do
         Right files -> enqueue $ ServerReloadFiles RestoredRootDirectory files
     loadFile e path = enqueue $ ServerLoadFile e path      
     unloadFile e path = enqueue $ ServerUnloadFile e path
-    loadModifications path = return () :: IO () -- TODO
+    loadModifications path = enqueue $ ServerLoadModifications path
 
 -- List all files in the watch directory
 listAllFiles :: FilePath -> IO [FileInfo]

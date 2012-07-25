@@ -51,7 +51,8 @@ handler fs sm c maybeExecPath message = case message of
     >> (STM.Clients.broadcastMessage c $ UnloadFile event file)
     
   -- Modified a file
-  -- TODO: ...
+  ServerLoadModifications file ->
+    Observer.WatchFile.loadFileModifications sm fs file
   
   -- Execute the tool on all files
   ServerExecuteAll -> do
