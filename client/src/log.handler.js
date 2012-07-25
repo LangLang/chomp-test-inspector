@@ -26,6 +26,7 @@
       ParseError: function(message) {
         console.error("...previous message this client sent could not be parsed: \n", message); 
       },
+      ConnectionClosed: function() {},
       _: function() { console.error("...(error) unknown message type `" + this._tag + "`" ); }
     });
   })();
