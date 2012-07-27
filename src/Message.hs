@@ -9,6 +9,10 @@ module Message (Message(..), ServerMessage(..), Notification(..), ProcessLog(..)
 import Data.Text
 import System.Exit (ExitCode)
 
+-- Supporting modules
+-- https://github.com/timjb/haskell-operational-transformation
+import qualified Control.OperationalTransformation.Text as OT
+
 -- Application modules
 import FileStore
 
@@ -19,7 +23,7 @@ data Message = Acknowledge
              | LoadFile StorageEvent FileInfo
              | LoadFileContents FileInfo (Maybe Text)
              | UnloadFile StorageEvent FileInfo
-             | PatchFile FilePath Patch
+             | OperationalTransform FilePath [OT.Action]
              | ParseError String
   deriving (Show, Read)
 
@@ -33,6 +37,7 @@ data ServerMessage = ServerNotify Notification
                    | ServerLoadFileContents FileInfo Text
                    | ServerUnloadFile StorageEvent FileInfo
                    | ServerLoadModifications FileInfo
+                   | ServerOperationalTransform FilePath [OT.Action] 
                    | ServerExecuteAll
   deriving (Show, Read)
 
@@ -43,7 +48,7 @@ data Notification = Info String
   deriving (Show, Read)
   
 -- The log messages from a running process may be sent as a notification
-data ProcessLog = LogStart 
+data ProcessLog = LogStart
                 | LogInfo String
                 | LogError String
                 | LogEnd ExitCode -- TODO: add exit code?

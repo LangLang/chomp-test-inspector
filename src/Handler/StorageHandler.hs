@@ -49,7 +49,7 @@ handler fs sm c maybeExecPath message = case message of
   ServerUnloadFile event file -> 
     STM.FileStore.unload fs file
     >> (STM.Clients.broadcastMessage c $ UnloadFile event file)
-    
+  
   -- Modified a file
   ServerLoadModifications file ->
     Observer.WatchFile.loadFileModifications sm fs file
