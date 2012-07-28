@@ -92,20 +92,19 @@ showSummary (OperationalTransform path actions) =
   `T.append` (showSummaryOTActions actions)
 showSummary m = T.pack $ show m
 
-showSummaryOTActions :: [OT.Action] -> T.Text
-showSummaryOTActions a = '['
-  `T.cons` (if length a > 5
-    then (T.unwords $ map showAction $ take 5 a) `T.append` T.pack "...]"  
-    else (T.unwords $ map showAction a) `T.snoc` ']')
+showSummaryOTActions :: [OT.Action] -> Text
+showSummaryOTActions actions = '['
+  `T.cons` (if length actions > 5
+    then (T.intercalate (T.pack ",") $ map showAction $ take 5 actions) `T.append` T.pack ",...]"  
+    else (T.intercalate (T.pack ",") $ map showAction actions) `T.snoc` ']')
   where
-    showAction (OT.Insert str) = (T.pack "Insert") `T.append` showSummaryString str 
+    showAction (OT.Insert str) = (T.pack "Insert ") `T.append` showSummaryString str 
     showAction a               = T.pack $ show a
 
+showSummaryString :: Text -> Text
 showSummaryString str = '\"' 
   `T.cons` (if T.length str > 25
     then (replaceNewlinesTabs $ T.take 25 str) `T.append` (T.pack "...\"")   
     else (replaceNewlinesTabs str) `T.snoc` '\"')
   where
     replaceNewlinesTabs = T.unwords . T.split (`elem` ['\n', '\t'])
-
- 
