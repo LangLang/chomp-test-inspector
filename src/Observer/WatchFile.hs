@@ -77,16 +77,12 @@ loadFileModifications messages fileStore path =
     generateDiffOps ((Diff.F, t):xs) = (OT.Delete $ length t):(generateDiffOps xs)
     generateDiffOps ((Diff.S, t):xs) = (OT.Insert $ T.pack t):(generateDiffOps xs)
 
-    -- It is possible that function similar to Text.spanBy used for this could be much faster 
+    -- It is possible that function similar to Text.spanBy used for this could be much faster
+    -- TODO: use  (which I missed previously) 
     getCommon :: T.Text -> T.Text -> (Int, T.Text, T.Text)
-    getCommon t0 t1 = match 0 
-      where
-        l = min (T.length t0) (T.length t1)
-        match i = if (T.index t0 i) == (T.index t1 i) 
-          then (if (i + 1) == l 
-            then (l, T.drop l t0, T.drop l t1)
-            else match (i + 1))
-          else (i, T.drop i t0, T.drop i t1)
+    getCommon t0 t1 = case T.commonPrefixes t0 t1 of
+      Nothing -> (0, t0, t1)
+      Just (prefix, r0, r1) -> (T.length prefix, r0, r1)  
 
 load :: FilePath -> FilePath -> IO T.Text
 load relPath path = do
