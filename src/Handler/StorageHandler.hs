@@ -18,6 +18,10 @@ import qualified Observer.WatchExecutable
 handler :: STM.FileStore -> STM.ServerMessages -> Clients -> Maybe FilePath -> ServerMessage -> IO ()
 handler fs sm c maybeExecPath message = case message of
 
+  -- Notify clients of log messages
+  ServerNotify notification -> 
+    (STM.Clients.broadcastMessage c $ Notify notification)
+
   -- Reload all files (or none)
   ServerReloadFiles event files ->
     STM.FileStore.reload fs files
@@ -53,6 +57,10 @@ handler fs sm c maybeExecPath message = case message of
   -- Modified a file
   ServerLoadModifications file ->
     Observer.WatchFile.loadFileModifications sm fs file
+
+  -- Notify clients of log messages
+  ServerOperationalTransform file actions -> 
+    (STM.Clients.broadcastMessage c $ OperationalTransform file actions)
   
   -- Execute the tool on all files
   ServerExecuteAll -> do
@@ -62,9 +70,6 @@ handler fs sm c maybeExecPath message = case message of
       (fromJust maybeExecPath) 
       (STM.FileStore.rootPath fs) $ 
         filter ((== ".source") . System.FilePath.takeExtension) files
-        
-  -- Notify clients of log messages
-  ServerNotify notification -> (STM.Clients.broadcastMessage c $ Notify notification)
 
   -- Unknown message
   _ -> System.IO.hPutStrLn System.IO.stderr $ "Unhandled server message: " ++ show message
