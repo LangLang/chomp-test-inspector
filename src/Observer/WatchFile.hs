@@ -43,7 +43,7 @@ loadFileModifications messages fileStore path =
         let operations = generateOps oldContents newContents
         if length operations > 0 && (case operations of [OT.Retain _] -> False ; _ -> True) 
           then (enqueue $ ServerOperationalTransform path operations)
-          else return ())
+          else (T.putStrLn $ T.pack "No changes detected in the contents of the modified file, '" `T.append` (T.pack path) `T.append` (T.pack "'.")))
   >> (return ())
   where
     rootPath = STM.FileStore.rootPath fileStore
