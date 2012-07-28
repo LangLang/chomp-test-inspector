@@ -61,7 +61,7 @@ forkObserver fileStore messages = do
       _       <- addWatch inotify masks rootPath $ inotifyEvent rootPath messages
       return inotify
       where  
-        masks = [ Modify, Attrib, Move, MoveSelf, Create, Delete, DeleteSelf, OnlyDir ]
+        masks = [ Modify, Attrib, CloseWrite, Move, MoveSelf, Create, Delete, DeleteSelf, OnlyDir ]
     
     -- Generate a message from an IO error  
     generateIOErrorMessage :: FilePath -> IOErrorType -> Maybe String
@@ -86,14 +86,11 @@ inotifyEvent :: FilePath -> STM.ServerMessages -> Event -> IO ()
 inotifyEvent rootPath messages event = do
   case event of
     -- A file was modified
-    -- TODO: Load the changes (unless the modification was instigated by us in which case we're already up to date)
     Modified False maybePath -> do
       putStrLn $ case maybePath of
         Just p -> "'" `append` pack p `append` "' was modified."
         Nothing -> "An unknown was modified."
-      case maybePath of
-        Just p -> loadModifications p
-        Nothing -> return ()
+      return ()
         
     -- A file's attributes have changed
     Attributes False maybePath -> do
@@ -101,6 +98,16 @@ inotifyEvent rootPath messages event = do
         Just p -> "The file '" `append` pack p `append` "'s attributes has changed."
         Nothing -> "An unknown file's attributes has changed."
       -- TODO: notify the client if the file has become read-only (then gray out the editor)
+   
+    -- A modified file's handle was closed    
+    Closed False maybePath True -> do
+      putStrLn $ case maybePath of
+        Just p -> "'" `append` pack p `append` "' was closed with modifications."
+        Nothing -> "An unknown file was closed with modifications."
+      case maybePath of
+        -- TODO: Don't load modifications if they were made by us
+        Just p -> loadModifications p
+        Nothing -> return ()
     
     -- A file was moved out of the watch path, so remove it from the file store
     MovedOut False p _ -> do
