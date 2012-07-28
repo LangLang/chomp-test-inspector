@@ -84,10 +84,28 @@ data Patch = D Text
 -- Serialize a message summary (similar to `show`, but used for logging)
 showSummary :: Message -> Text
 showSummary (LoadFileContents path (Just contents)) = 
-  T.pack "LoadFileContents " `T.append` (T.pack $ show path) `T.snoc` ' ' `T.append` (showPrefix contents)
-  where
-    showPrefix str = ('\"' `T.cons`) $ if T.length str > 25
-      then (replaceNewlinesTabs $ T.take 25 str) `T.append` (T.pack "...\"")   
-      else (replaceNewlinesTabs str) `T.snoc` '\"'
-    replaceNewlinesTabs = T.unwords . T.split (`elem` ['\n', '\t'])
+  T.pack "LoadFileContents " `T.append` (T.pack $ show path) `T.snoc` ' ' `T.append` (showSummaryString contents)
+showSummary (OperationalTransform path actions) =  
+  T.pack "OperationalTransform " 
+  `T.append` (T.pack $ show path) 
+  `T.snoc` ' ' 
+  `T.append` (showSummaryOTActions actions)
 showSummary m = T.pack $ show m
+
+showSummaryOTActions :: [OT.Action] -> T.Text
+showSummaryOTActions a = '['
+  `T.cons` (if length a > 5
+    then (T.unwords $ map showAction $ take 5 a) `T.append` T.pack "...]"  
+    else (T.unwords $ map showAction a) `T.snoc` ']')
+  where
+    showAction (OT.Insert str) = (T.pack "Insert") `T.append` showSummaryString str 
+    showAction a               = T.pack $ show a
+
+showSummaryString str = '\"' 
+  `T.cons` (if T.length str > 25
+    then (replaceNewlinesTabs $ T.take 25 str) `T.append` (T.pack "...\"")   
+    else (replaceNewlinesTabs str) `T.snoc` '\"')
+  where
+    replaceNewlinesTabs = T.unwords . T.split (`elem` ['\n', '\t'])
+
+ 
