@@ -1,4 +1,4 @@
-module Message (Message(..), ServerMessage(..), Notification(..), ProcessLog(..), StorageEvent(..), Patch(..)) where
+module Message (Message(..), ServerMessage(..), Notification(..), ProcessLog(..), StorageEvent(..), Patch(..), showSummary) where
 
 {- 
   TODO: Possibly split Message into ServerMessage and ClientMessage or perhaps StorageMessage and
@@ -6,7 +6,8 @@ module Message (Message(..), ServerMessage(..), Notification(..), ProcessLog(..)
 -}
 
 -- Standard modules
-import Data.Text
+import qualified Data.Text as T
+import Data.Text (Text)
 import System.Exit (ExitCode)
 
 -- Supporting modules
@@ -79,3 +80,14 @@ data StorageEvent = WatchInstalled
 -- Patch information for messages that carry text diffs
 data Patch = D Text
   deriving (Show, Read)
+  
+-- Serialize a message summary (similar to `show`, but used for logging)
+showSummary :: Message -> Text
+showSummary (LoadFileContents path (Just contents)) = 
+  T.pack "LoadFileContents " `T.append` (T.pack $ show path) `T.snoc` ' ' `T.append` (showPrefix contents)
+  where
+    showPrefix str = ('\"' `T.cons`) $ if T.length str > 25
+      then (replaceNewlinesTabs $ T.take 25 str) `T.append` (T.pack "...\"")   
+      else (replaceNewlinesTabs str) `T.snoc` '\"'
+    replaceNewlinesTabs = T.unwords . T.split (`elem` ['\n', '\t'])
+showSummary m = T.pack $ show m

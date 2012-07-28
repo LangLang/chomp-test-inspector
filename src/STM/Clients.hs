@@ -26,13 +26,13 @@ newIO = TList.emptyIO
 -- Broadcast a message to all the clients in the list
 broadcastMessage :: WS.TextProtocol p => Clients p -> Message -> IO ()
 broadcastMessage clients message = do
-  putStrLn $ "Broadcast message...\n..." `append` serialize message
+  putStrLn $ "Broadcast message...\n..." `append` showSummary message
   broadcast clients $ serialize message
 
 -- Send a message to a single client
 sendMessage :: WS.TextProtocol p => Client p -> Message -> IO ()
 sendMessage client message = do
-  putStrLn $ "Send message to client " `append` fst client `append` "...\n..." `append` serialize message  
+  putStrLn $ "Send message to client " `append` fst client `append` "...\n..." `append` showSummary message  
   send client $ serialize message
 
 broadcast :: WS.TextProtocol p => Clients p -> Text -> IO ()
