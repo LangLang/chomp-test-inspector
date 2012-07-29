@@ -16,7 +16,7 @@
     LangLang.highlight = function(str, caretPos) {
       var 
         parseResult = LangLang.parse(str, caretPos),
-        highlightResult = { html: [], caretPos: parseResult.caretPos },
+        highlightResult = { text: str, html: [], caretPos: parseResult.caretPos },
         i;
       for (i = 0; i < parseResult.ast.length; ++i)
         highlightResult.html.push(highlighter(parseResult.ast[i]));

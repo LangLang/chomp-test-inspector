@@ -12,8 +12,13 @@
         // Ignore shift/control/alt
         if (code == 0 || (code >= 16 && code <= 18))
           return;
-        //console.log(code);
         Editor.highlight(e.target);
+        // Generate an operation for changes to the buffer (since before this key event)
+        // TODO: Find a fast way of doing this (e.g. by marking html spans as dirty)
+        
+        // Send the operations to the server to be persisted
+        // TODO
+        //MessageService.send();
       });
     };
   })();

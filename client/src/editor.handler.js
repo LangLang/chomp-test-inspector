@@ -127,6 +127,9 @@
               .text("")
               .attr('contenteditable', false);
       },
+      OperationalTransform: function(file, actions) {
+        // TODO: Apply operational transform
+      },
       ConnectionClosed: function() {
         $("#editors").html("");
         disableEditor();
