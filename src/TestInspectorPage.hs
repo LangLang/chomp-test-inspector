@@ -39,6 +39,7 @@ pageHtml = renderHtml [shamlet|
         <script src=/adt/adt.js>
         <script src=/adt/adt-html.js>
         <script src=/supersimple/supersimple-editor.js>
+        <script src=/ot/ot.js>
         <style type=text/css>
           ^{css}
         <script>
@@ -77,6 +78,7 @@ jsFiles = [
     $(jsFile "client/src/log.handler.js"),
     $(jsFile "client/src/editor.handler.js"),
     $(jsFile "client/src/statusbar.handler.js"),
+    $(jsFile "client/src/editor.ot.client.js"),
     $(jsFile "client/src/editor.events.js"),
     $(jsFile "client/src/events.init.js"),
     $(jsFile "client/src/footer.js")
@@ -96,6 +98,7 @@ jsFiles = [
     $(jsFileReload "client/src/log.handler.js"),
     $(jsFileReload "client/src/editor.handler.js"),
     $(jsFileReload "client/src/statusbar.handler.js"),
+    $(jsFileReload "client/src/editor.ot.client.js"),
     $(jsFileReload "client/src/editor.events.js"),
     $(jsFileReload "client/src/events.init.js"),
     $(jsFileReload "client/src/footer.js")

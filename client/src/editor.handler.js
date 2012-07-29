@@ -1,6 +1,9 @@
   var Editor = Editor || {};
   (function(html){
     var 
+      // Operational transform clients 
+      // Keeps track of the synchronization state (synchronized/awaitingConfirm/awaitingWithBuffer) and revision number of a file
+      otClients = {},
       createDropDownLog = function() {
         return html.div({class: "editor-log editor-log-empty"}, 
           html.div({class: "editor-log-dropdown"}),
