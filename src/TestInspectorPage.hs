@@ -35,7 +35,6 @@ pageHtml = renderHtml [shamlet|
         <meta name="http-equiv" content="Content-type: text/html; charset=UTF-8"/>
         <title>#{pageTitle} &mdash; #{pageSubTitle}
         <link rel=stylesheet href=normalize/normalize.css>
-        <script src=/socket.io/socket.io.js>
         <script src=/jquery/jquery.min.js>
         <script src=/adt/adt.js>
         <script src=/adt/adt-html.js>
