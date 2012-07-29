@@ -1,7 +1,7 @@
   var
     Message = adt(
       // Client-server messages
-      'Acknowledge','Notify','ReloadFiles','LoadFile','UnloadFile','PatchFile','ParseError', 
+      'Acknowledge','Notify','ReloadFiles','LoadFile','UnloadFile','OperationalTransform','ParseError', 
       // Other messages (not used on server)
       'ConnectionClosed'),
     StorageEvent = adt(

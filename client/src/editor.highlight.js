@@ -118,5 +118,6 @@
         domElement.appendChild(result.html[i]);
       if (result.caretPos != null)
         setCaretOffset(domElement, result.caretPos);
+      return result;
     };
   })(html.evalCons);
