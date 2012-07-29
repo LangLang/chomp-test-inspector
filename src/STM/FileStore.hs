@@ -85,7 +85,7 @@ loadContents fs f contents = do
   maybeEntry <- readFileStoreEntry fs f
   case maybeEntry of
     Nothing -> return False
-    Just entry -> 
+    Just entry ->
       (atomically $ writeTVar (fileContents entry) $ Just contents)
       >> return True
 

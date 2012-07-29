@@ -5,7 +5,7 @@ module WebApp (webApp) where
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Control.Monad.Trans (liftIO)
-import Network.HTTP.Types (status200, status400)
+import Network.HTTP.Types (status200)
 import qualified Network.Wai as W
 import qualified Network.Wai.Application.Static as WAS
 
@@ -13,6 +13,7 @@ import qualified Network.Wai.Application.Static as WAS
 import TestInspectorPage
 
 -- Web application responsible for serving the html page and all static files to the browser
+webApp :: W.Application
 webApp req =
   let p = W.pathInfo req :: [T.Text] in
   case p of
@@ -28,10 +29,9 @@ staticApp = WAS.staticApp WAS.defaultWebAppSettings
 
 -- Serves the main web page (html and javascript)
 pageApp :: W.Application
-pageApp req = do
+pageApp _ = do
   --body <- requestBody req
   return $ W.responseLBS
     status200
     [("Content-Type", "text/html;charset=utf-8")]
     $ pageHtml
-

@@ -4,7 +4,7 @@ module Observer.WatchFile (loadFileContents, loadFilesContents, loadFileModifica
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Control.Concurrent
-import qualified System.FilePath
+import qualified System.FilePath as FilePath
 import qualified Data.Algorithm.Diff as Diff 
 
 -- Supporting modules
@@ -27,7 +27,7 @@ loadFileContents messages rootPath path =
   >> return ()
   where
     enqueue = STM.Messages.enqueueServerMessage messages
-    relPath = rootPath `System.FilePath.combine` path
+    relPath = rootPath `FilePath.combine` path
 
 loadFilesContents :: STM.ServerMessages -> FilePath -> [FilePath] -> IO ()
 loadFilesContents messages rootPath = mapM_ (Observer.WatchFile.loadFileContents messages rootPath)
@@ -47,7 +47,7 @@ loadFileModifications messages fileStore path =
   >> (return ())
   where
     rootPath = STM.FileStore.rootPath fileStore
-    relPath = rootPath `System.FilePath.combine` path
+    relPath = rootPath `FilePath.combine` path
     enqueue = STM.Messages.enqueueServerMessage messages
     
     -- TODO: This is likely to be slow because text is being unpacked
