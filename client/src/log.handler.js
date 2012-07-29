@@ -7,7 +7,6 @@
     Log.handler = adt({
       Acknowledge: function() { console.log("...previous message acknowledged"); },
       Notify: function(notification) { console.log("...notification (" + show(notification) + "): ", notification); },
-      _: function() { console.error("...(error) unknown message type `" + this._tag + "`" ); }
       ReloadFiles: function(storageEvent, files) {
         console.log("...reload files (" + show(storageEvent) + "): ", files);
       },
