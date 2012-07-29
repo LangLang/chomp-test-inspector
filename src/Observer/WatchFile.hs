@@ -13,6 +13,7 @@ import qualified Control.OperationalTransformation.Text as OT
 
 -- Application modules
 import Message
+import FileStore
 import qualified STM.Messages as STM (ServerMessages)
 import qualified STM.Messages
 import qualified STM.FileStore as STM (FileStore)
@@ -39,7 +40,7 @@ loadFileModifications messages fileStore path =
     newContents <- load relPath path
     case maybeOldContents of
       Nothing -> enqueue $ ServerLoadFileContents path newContents
-      Just oldContents -> do
+      Just (FileContents oldContents _) -> do
         let operations = generateOps oldContents newContents
         if length operations > 0 && (case operations of [OT.Retain _] -> False ; _ -> True) 
           then (enqueue $ ServerOperationalTransform path operations)

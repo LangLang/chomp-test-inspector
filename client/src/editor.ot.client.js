@@ -25,12 +25,13 @@
     OTClient.prototype.constructor = OTClient;
     OTClient.prototype.sendOperation = function (operation) {
       console.log("SEND OPERATION", operation);
-      //this.channel.write(operation);
+      // MessageService.send(state.ws, serialized operation)
     };
 
     OTClient.prototype.applyOperation = function (operation) {
       console.log("APPLY OPERATION", this, operation);
-      //this.str = operation.apply(this.str);
+      // operation.apply(editor contents);
+      // update editor
     };
     return OTClient;
   })(ot.Client);

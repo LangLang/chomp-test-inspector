@@ -78,12 +78,14 @@
         $lines.append(logLine);
       },
       ReloadFiles: function(storageEvent, files) { 
-        var i;
+        var i, f;
         $("#editors").html("");
+        otClients = {};
         for (i = 0; i < files.length; ++i)
           loadFile(files[i]);
       },
       LoadFile: function(storageEvent, file) {
+        delete otClients[file];
         loadFile(file);
       },
       LoadFileContents: function(file, maybeContents) {
@@ -96,20 +98,22 @@
           $editorInput = $editor.find(selector).find(".supersimple-editor-input");
 
         if ($editor.length !== 1 || $editorInput.length !== 1)
-          return;        
-        adt({
-          Just: function(contents) { 
+          return;
+        adt.recursive(adt({
+          FileContents: function(contents, revision) { 
+            otClients[file] = new Editor.OTClient(file, revision);
             $editorInput
               .text(contents)
               .attr('contenteditable', !isResult);
             Editor.highlight($editorInput.get(0));
           },
           Nothing: function() {
+            delete otClients[file];
             $editorInput
               .text("")
               .attr('contenteditable', false);
           }
-        })(maybeContents);
+        }))(maybeContents);
       },
       UnloadFile: function(storageEvent, file) { 
         var
@@ -119,6 +123,7 @@
           $editor = $editors.find(".editor[data-filename='" + baseFilename + "']"),
           thisPrefix = isResult? ".editor-result" : ".editor-source",
           otherPrefix = isResult? ".editor-source" : ".editor-result";
+        delete otClients[file];
         if ($editor.length == 0)
           return;
         if ($editor.find(otherPrefix).hasClass('editor-unloaded'))
@@ -134,6 +139,7 @@
         // TODO: Apply operational transform
       },
       ConnectionClosed: function() {
+        otClients = {};
         $("#editors").html("");
         disableEditor();
       }

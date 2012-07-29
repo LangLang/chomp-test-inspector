@@ -5,7 +5,7 @@ module STM.FileStore (FileStore, rootPath, newIO, allFiles, readFileContents, cl
 -- store itself does not get involved in physical disk access or messaging tasks.   
 
 -- Standard modules
-import Control.Monad (liftM, (<=<), zipWithM, filterM)
+import Control.Monad (liftM, (<=<), filterM)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TVar as TVar
 import Data.Text (Text)
@@ -20,7 +20,7 @@ import FileStore
 
 data FileStoreEntry = FileStoreEntry { 
     fileInfo :: TVar FileInfo,
-    fileContents :: TVar (Maybe Text)
+    fileContents :: TVar (Maybe FileContents)
   }
 
 data FileStore = FileStore {
@@ -41,7 +41,7 @@ allFiles fs = do
   mapM (TVar.readTVarIO . fileInfo) fileStoreEntries
 
 -- Read the contents 
-readFileContents :: FileStore -> FilePath -> IO (Maybe Text)
+readFileContents :: FileStore -> FilePath -> IO (Maybe FileContents)
 readFileContents fs f = do 
   maybeEntry <- (readFileStoreEntry fs f)
   case maybeEntry of
@@ -59,7 +59,7 @@ clear fs = do
 -- Reload the file store
 reload :: FileStore -> [FileInfo] -> IO ()
 reload fs filesToLoad = do
-  entries <- zipWithM createFileStoreEntry filesToLoad $ repeat Nothing
+  entries <- mapM createFileStoreEntry filesToLoad
   _ <- clear fs
   _ <- atomically $ do
     filesList <- readTVar $ files fs
@@ -69,7 +69,7 @@ reload fs filesToLoad = do
 -- Load a single file into the file store
 load :: FileStore -> FileInfo -> IO ()
 load fs f = do
-  newEntry <- createFileStoreEntry f Nothing
+  newEntry <- createFileStoreEntry f
   _ <- atomically $ do
     oldList <- readTVar $ files fs
     -- Note: Using TList.cons would probably be faster than TList.append because we're not keeping a tlist
@@ -86,7 +86,7 @@ loadContents fs f contents = do
   case maybeEntry of
     Nothing -> return False
     Just entry ->
-      (atomically $ writeTVar (fileContents entry) $ Just contents)
+      (atomically $ writeTVar (fileContents entry) $ Just $ FileContents contents 0)
       >> return True
 
 -- Remove the file from the file store
@@ -107,10 +107,10 @@ unload fs f =
 --generateDiffPatch = return  
 
 -- Helper to generate a new file store entry (used internally)
-createFileStoreEntry :: FileInfo -> Maybe Text -> IO FileStoreEntry
-createFileStoreEntry info contents = do
+createFileStoreEntry :: FileInfo -> IO FileStoreEntry
+createFileStoreEntry info = do
   tFileInfo <- newTVarIO info
-  tFileContents <- newTVarIO contents
+  tFileContents <- newTVarIO Nothing
   return $ FileStoreEntry { fileInfo = tFileInfo, fileContents = tFileContents }
 
 -- Read a specific file entry from the file store (used internally)

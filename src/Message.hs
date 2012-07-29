@@ -13,6 +13,7 @@ import System.Exit (ExitCode)
 -- Supporting modules
 -- https://github.com/timjb/haskell-operational-transformation
 import qualified Control.OperationalTransformation.Text as OT
+import qualified Control.OperationalTransformation.Server as OT (Revision)
 
 -- Application modules
 import FileStore
@@ -22,7 +23,7 @@ data Message = Acknowledge
              | Notify Notification
              | ReloadFiles StorageEvent [FileInfo]
              | LoadFile StorageEvent FileInfo
-             | LoadFileContents FileInfo (Maybe Text)
+             | LoadFileContents FileInfo (Maybe FileContents)
              | UnloadFile StorageEvent FileInfo
              | OperationalTransform FilePath [OT.Action]
              | ParseError String
@@ -83,8 +84,13 @@ data Patch = D Text
   
 -- Serialize a message summary (similar to `show`, but used for logging)
 showSummary :: Message -> Text
-showSummary (LoadFileContents path (Just contents)) = 
-  T.pack "LoadFileContents " `T.append` (T.pack $ show path) `T.snoc` ' ' `T.append` (showSummaryString contents)
+showSummary (LoadFileContents path (Just (FileContents contents rev))) = 
+  T.pack "LoadFileContents " 
+  `T.append` (T.pack $ show path)
+  `T.snoc` ' '
+  `T.append` (showSummaryString contents)
+  `T.snoc` ' '
+  `T.append` (T.pack $ show rev)
 showSummary (OperationalTransform path actions) =  
   T.pack "OperationalTransform " 
   `T.append` (T.pack $ show path) 

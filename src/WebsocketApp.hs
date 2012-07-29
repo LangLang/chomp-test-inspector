@@ -39,7 +39,7 @@ websocketApp clients fileStore serverMessages clientMessages req = do
   files <- liftIO $ STM.FileStore.allFiles fileStore
   filesContents <- liftIO $  mapM (STM.FileStore.readFileContents fileStore) files
   _ <- sendMessage $ ReloadFiles Connected files
-  _ <- zipWithM_ (\file contents -> sendMessage $ LoadFileContents file contents) files filesContents
+  _ <- zipWithM_ (\file contents -> sendMessage $ LoadFileContents file contents) files filesContents 
   
   -- Obtain a sink to use for sending data in another thread
   sink <- WS.getSink

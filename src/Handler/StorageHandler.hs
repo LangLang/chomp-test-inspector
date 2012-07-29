@@ -7,6 +7,7 @@ import qualified System.IO
 
 -- Application modules
 import Message
+import FileStore
 import WebsocketApp (Clients)
 import qualified STM.Clients
 import qualified STM.FileStore as STM (FileStore)
@@ -46,8 +47,8 @@ handler fs sm c maybeExecPath message = case message of
 
   -- Load a file's contents
   ServerLoadFileContents file fileContents ->
-    STM.FileStore.loadContents fs file fileContents
-    >> (STM.Clients.broadcastMessage c $ LoadFileContents file $ Just fileContents)
+    STM.FileStore.loadContents fs file fileContents -- TODO: clear revision number in file store 
+    >> (STM.Clients.broadcastMessage c $ LoadFileContents file $ Just $ FileContents fileContents 0)
   
   -- Unload a file
   ServerUnloadFile event file -> 
