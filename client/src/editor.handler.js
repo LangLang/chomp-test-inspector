@@ -102,16 +102,14 @@
         adt.recursive(adt({
           FileContents: function(contents, revision) { 
             otClients[file] = new Editor.OTClient(file, revision);
-            $editorInput
-              .text(contents)
-              .attr('contenteditable', !isResult);
+            $editorInput.attr('contenteditable', !isResult);
+            Editor.update(file, contents);
             Editor.highlight($editorInput.get(0));
           },
           Nothing: function() {
             delete otClients[file];
-            $editorInput
-              .text("")
-              .attr('contenteditable', false);
+            $editorInput.attr('contenteditable', false);
+            Editor.clear(file);
           }
         }))(maybeContents);
       },
@@ -128,12 +126,13 @@
           return;
         if ($editor.find(otherPrefix).hasClass('editor-unloaded'))
           $editor.remove();
-        else
+        else {
           $editor
             .find(thisPrefix).addClass('editor-unloaded')
             .find(".supersimple-editor-input")
-              .text("")
               .attr('contenteditable', false);
+          Editor.clear(file);
+        }
       },
       OperationalTransform: function(file, revision, actions) {
         if (otClients[file] == null) {

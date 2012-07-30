@@ -29,9 +29,10 @@
     };
 
     OTClient.prototype.applyOperation = function (operation) {
-      console.log("APPLY OPERATION", this, operation);
-      // operation.apply(editor contents);
-      // update editor
+      var
+        text = Editor.read(this.file),
+        transformedText = operation.apply(text);
+      Editor.update(this.file, transformedText);
     };
     return OTClient;
   })(ot.Client);
