@@ -37,13 +37,14 @@ loadFileModifications :: STM.ServerMessages -> STM.FileStore -> FilePath -> IO (
 loadFileModifications messages fileStore path =
   (Control.Concurrent.forkIO $ do
     maybeOldContents <- STM.FileStore.readFileContents fileStore path
+    -- TODO: (IMPORTANT) increment revision numbers appropriately
     newContents <- load relPath path
     case maybeOldContents of
       Nothing -> enqueue $ ServerLoadFileContents path newContents
-      Just (FileContents oldContents _) -> do
+      Just (FileContents oldContents rev) -> do
         let operations = generateOps oldContents newContents
         if length operations > 0 && (case operations of [OT.Retain _] -> False ; _ -> True) 
-          then (enqueue $ ServerOperationalTransform path operations)
+          then (enqueue $ ServerOperationalTransform path rev operations)
           else (T.putStrLn $ T.pack "No changes detected in the contents of the modified file, '" `T.append` (T.pack path) `T.append` (T.pack "'.")))
   >> (return ())
   where

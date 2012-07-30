@@ -135,8 +135,24 @@
               .text("")
               .attr('contenteditable', false);
       },
-      OperationalTransform: function(file, actions) {
-        // TODO: Apply operational transform
+      OperationalTransform: function(file, revision, actions) {
+        if (otClients[file] == null) {
+          console.error("...(error) no operational transform client for the file `" + String(file) + "`");
+          return;
+        }
+        if (actions.length === 0)
+          return;
+        var
+          i,
+          op = new ot.Operation(revision),
+          opAction = adt({
+          'Retain': function(n) { op.retain(n); },
+          'Insert': function(t) { op.insert(t); },
+          'Delete': function(n) { op.delete(n); }
+        });
+        for (i = 0; i < actions.length; ++i)
+          opAction(actions[i]);
+        otClients[file].applyServer(op);
       },
       ConnectionClosed: function() {
         otClients = {};

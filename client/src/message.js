@@ -25,4 +25,9 @@
       'UnmountedRootDirectory',
       'Error'
     ),
-    ProcessLog = adt('LogStart', 'LogInfo', 'LogError', 'LogEnd');
+    ProcessLog = adt('LogStart', 'LogInfo', 'LogError', 'LogEnd'),
+    OTAction = adt(
+      'Retain', // Int
+      'Insert', // Text
+      'Delete'  // Int
+    );

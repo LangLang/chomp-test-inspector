@@ -60,8 +60,8 @@ handler fs sm c maybeExecPath message = case message of
     Observer.WatchFile.loadFileModifications sm fs file
 
   -- Notify clients of log messages
-  ServerOperationalTransform file actions -> 
-    (STM.Clients.broadcastMessage c $ OperationalTransform file actions)
+  ServerOperationalTransform file rev actions -> 
+    (STM.Clients.broadcastMessage c $ OperationalTransform file rev actions)
   
   -- Execute the tool on all files
   ServerExecuteAll -> do

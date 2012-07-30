@@ -25,7 +25,7 @@ data Message = Acknowledge
              | LoadFile StorageEvent FileInfo
              | LoadFileContents FileInfo (Maybe FileContents)
              | UnloadFile StorageEvent FileInfo
-             | OperationalTransform FilePath [OT.Action]
+             | OperationalTransform FilePath OT.Revision [OT.Action]
              | ParseError String
   deriving (Show, Read)
 
@@ -39,7 +39,7 @@ data ServerMessage = ServerNotify Notification
                    | ServerLoadFileContents FileInfo Text
                    | ServerUnloadFile StorageEvent FileInfo
                    | ServerLoadModifications FileInfo
-                   | ServerOperationalTransform FilePath [OT.Action] 
+                   | ServerOperationalTransform FilePath OT.Revision [OT.Action] 
                    | ServerExecuteAll
   deriving (Show, Read)
 
@@ -91,10 +91,12 @@ showSummary (LoadFileContents path (Just (FileContents contents rev))) =
   `T.append` (showSummaryString contents)
   `T.snoc` ' '
   `T.append` (T.pack $ show rev)
-showSummary (OperationalTransform path actions) =  
+showSummary (OperationalTransform path rev actions) =  
   T.pack "OperationalTransform " 
   `T.append` (T.pack $ show path) 
   `T.snoc` ' ' 
+  `T.append` (T.pack $ show rev)
+  `T.snoc` ' '
   `T.append` (showSummaryOTActions actions)
 showSummary m = T.pack $ show m
 
