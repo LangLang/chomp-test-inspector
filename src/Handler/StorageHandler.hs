@@ -4,6 +4,7 @@ module Handler.StorageHandler (handler) where
 import Data.Maybe (isJust, fromJust)
 import qualified System.FilePath
 import qualified System.IO
+import Control.Monad (liftM)
 
 -- Application modules
 import Message
@@ -37,13 +38,16 @@ handler fs sm c maybeExecPath message = case message of
       else return ()
     
   -- Load a file
-  ServerLoadFile event file ->
-    STM.FileStore.load fs file
-    >> (STM.Clients.broadcastMessage c $ LoadFile event file)
-    >> (Observer.WatchFile.loadFileContents sm (STM.FileStore.rootPath fs) file)
-    >> if System.FilePath.takeExtension file == ".source" && isJust maybeExecPath 
-      then Observer.WatchExecutable.run sm (fromJust maybeExecPath) (STM.FileStore.rootPath fs) file
-      else return ()
+  ServerLoadFile event file -> do
+    -- Use the file store to determine whether the file is merely being replaced (thus modified)
+    alreadyLoaded <- liftM not $ STM.FileStore.load fs file
+    if alreadyLoaded 
+      then return ()
+      else (STM.Clients.broadcastMessage c $ LoadFile event file)
+        >> (Observer.WatchFile.loadFileContents sm (STM.FileStore.rootPath fs) file)
+        >> if System.FilePath.takeExtension file == ".source" && isJust maybeExecPath 
+          then Observer.WatchExecutable.run sm (fromJust maybeExecPath) (STM.FileStore.rootPath fs) file
+          else return ()
 
   -- Load a file's contents
   ServerLoadFileContents file fileContents ->

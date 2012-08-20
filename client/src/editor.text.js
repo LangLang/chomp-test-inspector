@@ -38,6 +38,5 @@
       if ($editor.length !== 1 || $editorInput.length !== 1)
         throw "No editor found for `" + String(file) + "`.";
       $editorInput.text("");
-      // TODO: highlight... and get changes after highlight
     };
   })();

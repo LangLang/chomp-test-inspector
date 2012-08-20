@@ -67,17 +67,21 @@ reload fs filesToLoad = do
   return ()
     
 -- Load a single file into the file store
-load :: FileStore -> FileInfo -> IO ()
+load :: FileStore -> FileInfo -> IO Bool
 load fs f = do
-  newEntry <- createFileStoreEntry f
-  _ <- atomically $ do
-    oldList <- readTVar $ files fs
-    -- Note: Using TList.cons would probably be faster than TList.append because we're not keeping a tlist
-    --       end-point. However, append keeps the file listing order on the clients more or less
-    --       consistent
-    writeEnd <- TList.end oldList 
-    TList.append writeEnd newEntry
-  return ()
+  existingEntry <- readFileStoreEntry fs f
+  case existingEntry of
+    Just _ -> return False
+    Nothing -> do
+      newEntry <- createFileStoreEntry f
+      _ <- atomically $ do
+        oldList <- readTVar $ files fs
+        -- Note: Using TList.cons would probably be faster than TList.append because we're not keeping a tlist
+        --       end-point. However, append keeps the file listing order on the clients more or less
+        --       consistent
+        writeEnd <- TList.end oldList 
+        TList.append writeEnd newEntry
+      return True
 
 -- Load file contents into the store
 loadContents :: FileStore -> FileInfo -> Text -> IO Bool
