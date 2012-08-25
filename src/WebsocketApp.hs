@@ -33,7 +33,7 @@ websocketApp clients fileStore serverMessages clientMessages req = do
   WS.acceptRequest req
   liftIO $ putStrLn $ "Client connected (TODO: lookup client)..."
 
-  -- Send the list of files and their contents currently in the file store to the client application
+  -- Send the list of files and along with their cached contents & information (revision) to the client
   -- TODO: Read an "active" flag from the file store.
   --       If the file store is not active, then send ReloadFiles LostRootDirectory or similar instead
   files <- liftIO $ FileStore.allFilesIO fileStore

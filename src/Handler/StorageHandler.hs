@@ -8,7 +8,8 @@ import Control.Monad (liftM)
 
 -- Supporting modules
 -- https://github.com/timjb/haskell-operational-transformation
---import qualified Control.OperationalTransformation.Server as OT
+import qualified Control.OperationalTransformation.Server as OT
+import qualified Control.OperationalTransformation.Text as OT 
 
 -- Application modules
 import Message
@@ -59,7 +60,7 @@ handler fs sm c maybeExecPath message = case message of
   
   -- Load a file's contents
   ServerLoadFileContents file fileContents ->
-    FileStore.loadCacheIO fs file (FileStore.FileInfo { FileStore.revision = 0 }) fileContents 
+    FileStore.loadCacheIO fs file (FileStore.FileInfo { FileStore.revision = 0, FileStore.operations = [] }) fileContents 
     >> (STM.Clients.broadcastMessage c $ LoadFileContents file 0 fileContents)
   
   -- Modified a file
@@ -72,12 +73,16 @@ handler fs sm c maybeExecPath message = case message of
     case maybeCacheEntry of
       Nothing -> return ()
       Just cacheEntry -> do
-        -- TODO: BUSY HERE
         -- Apply OT operations to the file store's cache
-        --let fileInfo = FileStore.cacheEntryInfo cacheEntry
-        --let fileContents = FileStore.cacheEntryContents cacheEntry 
-        --let otResult' = OT.applyOperation (OT.ServerState rev fileContents actions) (FileStore.revision fileInfo) actions
-        (STM.Clients.broadcastMessage c $ OperationalTransform file rev actions)
+        let otResult = OT.applyOperation (FileStore.otServerState cacheEntry) rev (OT.TextOperation actions)
+        case otResult of
+          Left errorMessage -> System.IO.hPutStrLn System.IO.stderr $ "Operational transform failed: " ++ show errorMessage
+          Right (op', OT.ServerState revision' doc' ops') ->
+            let (OT.TextOperation actions') = op' in
+            -- Store updated state in the
+            (FileStore.loadCacheIO fs file (FileStore.FileInfo { FileStore.revision = revision', FileStore.operations = ops' }) doc')
+            -- Broadcast operations to clients
+            >> (STM.Clients.broadcastMessage c $ OperationalTransform file rev actions')
   
   -- Execute the tool on all files
   ServerExecuteAll -> do

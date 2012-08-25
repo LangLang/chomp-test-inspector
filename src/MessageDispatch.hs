@@ -8,7 +8,6 @@ import Control.Concurrent.STM (TVar, atomically, tryReadTChan, readTVar, writeTV
 -- Application modules
 import Message
 import WebsocketApp (Clients)
-import qualified FileStore
 import FileStore (FileStore)
 import qualified STM.Messages as STM (Messages, ServerMessages)
 import ServerState
