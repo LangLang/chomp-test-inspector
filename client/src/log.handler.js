@@ -13,13 +13,16 @@
       LoadFile: function(storageEvent, file) { 
         console.log("...load file (" + show(storageEvent) + "): ", file);
       },
-      LoadFileContents: function(file, contents) { 
-        console.log("...load file contents: ", file);
-      },
       UnloadFile: function(storageEvent, file) {
         console.log("...unload file (" + show(storageEvent) + "): ", file);
       },
-      OperationalTransform: function() {},
+      LoadFileContents: function(file, revision, contents) { 
+        console.log("...load file contents: ", file, " (revision " + String(revision) + ")");
+      },
+      UnloadFileContents: function(file) { 
+        console.log("...unload file contents: ", file);
+      },
+      OperationalTransform: function(file, revision, actions) {},
       ParseError: function(message) {
         console.error("...previous message this client sent could not be parsed: \n", message); 
       },

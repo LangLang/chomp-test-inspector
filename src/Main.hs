@@ -13,8 +13,8 @@ import qualified System.Directory
 -- Application modules
 import WebApp
 import WebsocketApp
-import qualified STM.FileStore as STM (FileStore)
-import qualified STM.FileStore as STM.FileStore
+import qualified FileStore
+import FileStore (FileStore)
 import qualified Observer.WatchDirectory
 import qualified Observer.WatchExecutable
 import qualified STM.Messages as STM (Messages, ServerMessages)
@@ -37,7 +37,7 @@ main = do
   
   -- Instantiate shared resources
   clients <- STM.Clients.newIO
-  fileStore <- STM.FileStore.newIO watchPath
+  fileStore <- FileStore.newIO watchPath
   serverMessages <- STM.Messages.newIO :: IO STM.ServerMessages
   clientMessages <- STM.Messages.newIO :: IO STM.Messages
   serverStateT <- newTVarIO Active :: IO (TVar ServerState)
@@ -76,7 +76,7 @@ main = do
     printUsage = putStrLn "USAGE: chomp-test-inspector [watchPath] [executablePath]"
 
 -- Loop the dispatch method until the termination flag is true and the message queues are both empty
-loopDispatch :: TVar ServerState -> Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> Maybe FilePath -> IO ()
+loopDispatch :: TVar ServerState -> Clients -> FileStore -> STM.ServerMessages -> STM.Messages -> Maybe FilePath -> IO ()
 loopDispatch serverStateT clients fileStore serverMessages clientMessages maybeExecPath = loop
   where
     loop = do
@@ -106,7 +106,7 @@ foreverUntilIO loop check = do
 
 -- Set up the web application (front controller) with the websocket application (front controller)
 -- and shared resources (the file store and incoming message queues)
-webAppSettings :: Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> Warp.Settings
+webAppSettings :: Clients -> FileStore -> STM.ServerMessages -> STM.Messages -> Warp.Settings
 webAppSettings clients fileStore serverMessages clientMessages = Warp.defaultSettings
   { Warp.settingsPort = 8080
   , Warp.settingsIntercept = interceptWith defaultWebSocketsOptions $ websocketApp clients fileStore serverMessages clientMessages

@@ -19,9 +19,8 @@ import qualified GHC.IO.Exception as Exception
 
 -- Application modules
 import Message
-import FileStore
-import qualified STM.FileStore
-import qualified STM.FileStore as STM (FileStore)
+import qualified FileStore
+import FileStore (FileStore)
 import qualified STM.Messages
 import qualified STM.Messages as STM (ServerMessages)
 --import qualified Observer.WatchFile
@@ -30,16 +29,16 @@ import qualified STM.Messages as STM (ServerMessages)
 type WatchDirectoryHandle = INotify
 
 -- Run the asynchronous directory watch
-forkObserver :: STM.FileStore -> STM.ServerMessages -> IO (Maybe WatchDirectoryHandle)
+forkObserver :: FileStore -> STM.ServerMessages -> IO (Maybe WatchDirectoryHandle)
 forkObserver fileStore messages = do
-  let rootPath = STM.FileStore.rootPath fileStore
+  let rootPath = FileStore.rootPath fileStore
   -- Try to load files in the watch directory
   errorOrFiles <- try $ listAllFiles rootPath 
   -- Either fail gracefully if reading the path failed, or start watching the directory
   case errorOrFiles of
     Left e -> do
       -- Clear the file store and return no observer
-      STM.FileStore.clear fileStore
+      FileStore.clearIO fileStore
       case generateIOErrorMessage rootPath $ ioeGetErrorType e of 
         Just message -> do
           hPutStrLn stderr $ pack message
@@ -157,7 +156,7 @@ inotifyEvent rootPath messages event = do
     enqueue = STM.Messages.enqueueServerMessage messages
     unloadFiles e = enqueue $ ServerReloadFiles e []
     movedWatchPath = do
-      errorOrFiles <- try $ listAllFiles rootPath :: IO (Either IOError [FileInfo])
+      errorOrFiles <- try $ listAllFiles rootPath :: IO (Either IOError [FilePath])
       case errorOrFiles of
         Left _      -> enqueue $ ServerReloadFiles MovedOutRootDirectory [] 
         Right files -> enqueue $ ServerReloadFiles RestoredRootDirectory files
@@ -166,7 +165,7 @@ inotifyEvent rootPath messages event = do
     loadModifications path = enqueue $ ServerLoadModifications path
 
 -- List all files in the watch directory
-listAllFiles :: FilePath -> IO [FileInfo]
+listAllFiles :: FilePath -> IO [FilePath]
 listAllFiles rootPath = (liftM $ filter $ not . isDots) $ getDirectoryContents rootPath
   where
     isDots f = (endswith "/." f) || (endswith "/.." f) || (f == "..") || (f == ".")

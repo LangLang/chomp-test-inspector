@@ -14,17 +14,20 @@
           MovedInFile: function() { StatusBar.info("The file ", html.code(file), " has been moved into the project"); }
         })(storageEvent);
       },
-      LoadFileContents: function(file, contents) {},
       UnloadFile: function(storageEvent, file) { 
         adt({
           DeletedFile: function() { StatusBar.info("The file ", html.code(file), " has been deleted"); },
           MovedOutFile: function() { StatusBar.info("The file ", html.code(file), " was moved out of the project"); }
         })(storageEvent);
       },
+      LoadFileContents: function(file, revision, contents) {},
+      UnloadFileContents: function(file) {},
       /*
       RenamedFile: function(sourceFile, targetFile) {
         StatusBar.info("The file ", html.code(sourceFile), " has been renamed to ", html.code(targetFile));
       },//*/
+      OperationalTransform: function(file, revision, actions) {},
+      ParseError: function(message) {},
       ConnectionClosed: function() { StatusBar.important("The connection to the server was closed."); }
     });
   })(html.evalCons);

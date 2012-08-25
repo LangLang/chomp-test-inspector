@@ -21,10 +21,11 @@ import FileStore
 -- Messages sent between clients and the server (and possibly between clients as well)
 data Message = Acknowledge
              | Notify Notification
-             | ReloadFiles StorageEvent [FileInfo]
-             | LoadFile StorageEvent FileInfo
-             | LoadFileContents FileInfo (Maybe FileContents)
-             | UnloadFile StorageEvent FileInfo
+             | ReloadFiles StorageEvent [FilePath]
+             | LoadFile StorageEvent FilePath
+             | UnloadFile StorageEvent FilePath
+             | LoadFileContents FilePath OT.Revision FileContents
+             | UnloadFileContents FilePath
              | OperationalTransform FilePath OT.Revision [OT.Action]
              | ParseError String
   deriving (Show, Read)
@@ -34,11 +35,11 @@ data Message = Acknowledge
 
 -- Server generated messages (to be processed locally)
 data ServerMessage = ServerNotify Notification
-                   | ServerReloadFiles StorageEvent [FileInfo]
-                   | ServerLoadFile StorageEvent FileInfo
-                   | ServerLoadFileContents FileInfo Text
-                   | ServerUnloadFile StorageEvent FileInfo
-                   | ServerLoadModifications FileInfo
+                   | ServerReloadFiles StorageEvent [FilePath]
+                   | ServerLoadFile StorageEvent FilePath
+                   | ServerUnloadFile StorageEvent FilePath
+                   | ServerLoadFileContents FilePath FileContents
+                   | ServerLoadModifications FilePath
                    | ServerOperationalTransform FilePath OT.Revision [OT.Action] 
                    | ServerExecuteAll
   deriving (Show, Read)
@@ -46,7 +47,7 @@ data ServerMessage = ServerNotify Notification
 -- Notifications can be attached to certain messages
 data Notification = Info String
                   | ClientDisconnected String
-                  | ProcessMessage FileInfo ProcessLog
+                  | ProcessMessage FilePath ProcessLog
   deriving (Show, Read)
   
 -- The log messages from a running process may be sent as a notification
@@ -84,13 +85,13 @@ data Patch = D Text
   
 -- Serialize a message summary (similar to `show`, but used for logging)
 showSummary :: Message -> Text
-showSummary (LoadFileContents path (Just (FileContents contents rev))) = 
-  T.pack "LoadFileContents " 
-  `T.append` (T.pack $ show path)
-  `T.snoc` ' '
-  `T.append` (showSummaryString contents)
+showSummary (LoadFileContents f rev fc) = 
+  T.pack "LoadFileContents "
+  `T.append` (T.pack $ show f)
   `T.snoc` ' '
   `T.append` (T.pack $ show rev)
+  `T.snoc` ' '
+  `T.append` (showSummaryString fc)
 showSummary (OperationalTransform path rev actions) =  
   T.pack "OperationalTransform " 
   `T.append` (T.pack $ show path) 

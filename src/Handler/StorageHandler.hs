@@ -6,18 +6,21 @@ import qualified System.FilePath
 import qualified System.IO
 import Control.Monad (liftM)
 
+-- Supporting modules
+-- https://github.com/timjb/haskell-operational-transformation
+--import qualified Control.OperationalTransformation.Server as OT
+
 -- Application modules
 import Message
-import FileStore
+import qualified FileStore
+import FileStore (FileStore)
 import WebsocketApp (Clients)
 import qualified STM.Clients
-import qualified STM.FileStore as STM (FileStore)
-import qualified STM.FileStore
 import qualified STM.Messages as STM (ServerMessages)
 import qualified Observer.WatchFile
 import qualified Observer.WatchExecutable
 
-handler :: STM.FileStore -> STM.ServerMessages -> Clients -> Maybe FilePath -> ServerMessage -> IO ()
+handler :: FileStore -> STM.ServerMessages -> Clients -> Maybe FilePath -> ServerMessage -> IO ()
 handler fs sm c maybeExecPath message = case message of
 
   -- Notify clients of log messages
@@ -26,62 +29,65 @@ handler fs sm c maybeExecPath message = case message of
 
   -- Reload all files (or none)
   ServerReloadFiles event files ->
-    STM.FileStore.reload fs files
+    FileStore.reloadIO fs files
     >> (STM.Clients.broadcastMessage c $ ReloadFiles event files)
-    >> (Observer.WatchFile.loadFilesContents sm (STM.FileStore.rootPath fs) files)
+    >> (Observer.WatchFile.loadFilesContents sm (FileStore.rootPath fs) files)
     >> if isJust maybeExecPath 
       then Observer.WatchExecutable.runEach
         sm 
         (fromJust maybeExecPath) 
-        (STM.FileStore.rootPath fs) $ 
+        (FileStore.rootPath fs) $ 
           filter ((== ".source") . System.FilePath.takeExtension) files
       else return ()
     
   -- Load a file
   ServerLoadFile event file -> do
     -- Use the file store to determine whether the file is merely being replaced (thus modified)
-    alreadyLoaded <- liftM not $ STM.FileStore.load fs file
+    alreadyLoaded <- liftM not $ FileStore.loadIO fs file
     if alreadyLoaded 
       then return ()
       else (STM.Clients.broadcastMessage c $ LoadFile event file)
-        >> (Observer.WatchFile.loadFileContents sm (STM.FileStore.rootPath fs) file)
+        >> (Observer.WatchFile.loadFileContents sm (FileStore.rootPath fs) file)
         >> if System.FilePath.takeExtension file == ".source" && isJust maybeExecPath 
-          then Observer.WatchExecutable.run sm (fromJust maybeExecPath) (STM.FileStore.rootPath fs) file
+          then Observer.WatchExecutable.run sm (fromJust maybeExecPath) (FileStore.rootPath fs) file
           else return ()
 
-  -- Load a file's contents
-  ServerLoadFileContents file fileContents ->
-    STM.FileStore.loadContents fs file fileContents -- TODO: clear revision number in file store 
-    >> (STM.Clients.broadcastMessage c $ LoadFileContents file $ Just $ FileContents fileContents 0)
-  
   -- Unload a file
   ServerUnloadFile event file -> 
-    STM.FileStore.unload fs file
+    FileStore.unloadIO fs file
     >> (STM.Clients.broadcastMessage c $ UnloadFile event file)
+  
+  -- Load a file's contents
+  ServerLoadFileContents file fileContents ->
+    FileStore.loadCacheIO fs file (FileStore.FileInfo { FileStore.revision = 0 }) fileContents 
+    >> (STM.Clients.broadcastMessage c $ LoadFileContents file 0 fileContents)
   
   -- Modified a file
   ServerLoadModifications file ->
     Observer.WatchFile.loadFileModifications sm fs file
 
   -- Notify clients of log messages
-  ServerOperationalTransform file rev actions -> 
-    (STM.Clients.broadcastMessage c $ OperationalTransform file rev actions)
+  ServerOperationalTransform file rev actions -> do
+    maybeCacheEntry <- FileStore.readFileCacheEntryIO fs file
+    case maybeCacheEntry of
+      Nothing -> return ()
+      Just cacheEntry -> do
+        -- TODO: BUSY HERE
+        -- Apply OT operations to the file store's cache
+        --let fileInfo = FileStore.cacheEntryInfo cacheEntry
+        --let fileContents = FileStore.cacheEntryContents cacheEntry 
+        --let otResult' = OT.applyOperation (OT.ServerState rev fileContents actions) (FileStore.revision fileInfo) actions
+        (STM.Clients.broadcastMessage c $ OperationalTransform file rev actions)
   
   -- Execute the tool on all files
   ServerExecuteAll -> do
-    files <- STM.FileStore.allFiles fs
+    files <- FileStore.allFilesIO fs
     Observer.WatchExecutable.runEach
       sm
       (fromJust maybeExecPath) 
-      (STM.FileStore.rootPath fs) $ 
+      (FileStore.rootPath fs) $ 
         filter ((== ".source") . System.FilePath.takeExtension) files
 
   -- Unknown message
   _ -> System.IO.hPutStrLn System.IO.stderr $ "Unhandled server message: " ++ show message
 
---loadDiff :: Clients -> STM.FileStore -> FileInfo -> IO ()
---loadDiff clients fileStore file =
---  STM.Clients.broadcastMessage clients $ LoadDiff generateDiff
---  where
---    generateDiff :: IO Patch
---generateDiffPatch    generateDiff = 

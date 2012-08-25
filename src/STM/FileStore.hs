@@ -1,4 +1,25 @@
-module STM.FileStore (FileStore, rootPath, newIO, allFiles, readFileContents, clear, reload, load, loadContents, unload) where
+module STM.FileStore (
+  FileStore,
+  FileCacheEntry,
+  FileStoreEntry,
+  rootPath,
+  newIO,
+  allFilesIO,
+  readFileStoreEntryIO,
+  readFileCacheEntryIO,
+  readFileContentsIO,
+  clearIO,
+  reloadIO,
+  loadIO,
+  loadCacheIO,
+  unloadIO,
+  fileEntryPathT,
+  fileEntryCacheT,
+  fileEntryPathIO,
+  fileEntryCacheIO,
+  cacheEntryInfo,
+  cacheEntryContents
+) where
 
 -- The file store is a cache that reflects the contents of a location on some storage device.
 -- Its only responsibility is storage and synchronicity (atomicity) of storage access - the file
@@ -8,72 +29,99 @@ module STM.FileStore (FileStore, rootPath, newIO, allFiles, readFileContents, cl
 import Control.Monad (liftM, (<=<), filterM)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TVar as TVar
-import Data.Text (Text)
 import Data.Maybe (isNothing)
 import qualified Data.STM.TList as TList
 import qualified Data.STM.TCursor as TCursor
 import Data.STM.TCursor (TCursor)
 import Prelude hiding (readFile)
 
--- Application modules
-import FileStore
-
-data FileStoreEntry = FileStoreEntry { 
-    fileInfo :: TVar FileInfo,
-    fileContents :: TVar (Maybe FileContents)
+data FileCacheEntry fileInfoType fileContentsType = FileCacheEntry {
+    cacheEntryInfo :: fileInfoType,
+    cacheEntryContents :: fileContentsType
   }
 
-data FileStore = FileStore {
+data FileStoreEntry fileInfoType fileContentsType = FileStoreEntry {
+    fileEntryPath :: TVar FilePath,
+    fileEntryCache :: TVar (Maybe (FileCacheEntry fileInfoType fileContentsType))
+  }
+  
+fileEntryPathT :: (FileStoreEntry fiType fcType) -> STM FilePath
+fileEntryPathT = readTVar . fileEntryPath
+
+fileEntryPathIO :: (FileStoreEntry fiType fcType) -> IO FilePath
+fileEntryPathIO = readTVarIO . fileEntryPath
+
+fileEntryCacheT :: (FileStoreEntry fiType fcType) -> STM (Maybe (FileCacheEntry fiType fcType))
+fileEntryCacheT = readTVar . fileEntryCache
+
+fileEntryCacheIO :: (FileStoreEntry fiType fcType) -> IO (Maybe (FileCacheEntry fiType fcType))
+fileEntryCacheIO = readTVarIO . fileEntryCache
+
+data FileStore fileInfoType fileContentsType = FileStore {
     rootPath :: FilePath,
-    files :: TCursor FileStoreEntry
+    files :: TCursor (FileStoreEntry fileInfoType fileContentsType)
   }
 
 -- Create a new file store in a single atomic operation 
-newIO :: FilePath -> IO FileStore
+newIO :: FilePath -> IO (FileStore fiType fcType)
 newIO path = do
   emptyFiles <- atomically $ TList.empty >>= TVar.newTVar
   return $ FileStore { rootPath = path, files = emptyFiles }
   
 -- Get the contents of the file store as a single atomic operation 
-allFiles :: FileStore -> IO [FileInfo]
-allFiles fs = do  
+allFilesIO :: (FileStore fiType fcType) -> IO [FilePath]
+allFilesIO fs = do  
   fileStoreEntries <- atomically $ (TList.toList <=< TVar.readTVar) $ files fs
-  mapM (TVar.readTVarIO . fileInfo) fileStoreEntries
+  mapM (TVar.readTVarIO . fileEntryPath) fileStoreEntries
 
 -- Read the contents 
-readFileContents :: FileStore -> FilePath -> IO (Maybe FileContents)
-readFileContents fs f = do 
-  maybeEntry <- (readFileStoreEntry fs f)
+readFileContentsIO :: (FileStore fiType fcType) -> FilePath -> IO (Maybe fcType)
+readFileContentsIO fs f = do 
+  maybeEntry <- (readFileStoreEntryIO fs f)
   case maybeEntry of
     Nothing -> return Nothing
-    Just entry -> readTVarIO $ fileContents entry
+    Just fileEntry -> do
+      maybeCacheEntry <- fileEntryCacheIO fileEntry
+      case maybeCacheEntry of
+        Nothing -> return Nothing
+        Just cacheEntry ->
+          return $ Just $ cacheEntryContents cacheEntry
+
+{- For presentation: Why is this not possible?
+readFileContentsIO :: (FileStore fiType fcType) -> FilePath -> IO (Maybe fcType)
+readFileContentsIO fs f = do
+  fileEntry <- (readFileStoreEntryIO fs f)
+  cacheEntry <- fileEntryCacheIO fileEntry
+  return $ fileCacheContents cacheEntry
+--} 
 
 -- Clear the file store using multiple operations
-clear :: FileStore -> IO ()
-clear fs = do
+clearIO :: (FileStore fiType fcType) -> IO ()
+clearIO fs = do
   xs <- atomically $ TCursor.tryReadTCursor $ files fs
   if isNothing xs
     then return ()
-    else clear fs
+    else clearIO fs
 
 -- Reload the file store
-reload :: FileStore -> [FileInfo] -> IO ()
-reload fs filesToLoad = do
-  entries <- mapM createFileStoreEntry filesToLoad
-  _ <- clear fs
+reloadIO :: (FileStore fiType fcType) -> [FilePath] -> IO ()
+reloadIO fs filesToLoad = do
+  entries <- mapM createFileStoreEntryIO filesToLoad
+  _ <- clearIO fs
   _ <- atomically $ do
     filesList <- readTVar $ files fs
     flip TList.appendList entries filesList
   return ()
     
 -- Load a single file into the file store
-load :: FileStore -> FileInfo -> IO Bool
-load fs f = do
-  existingEntry <- readFileStoreEntry fs f
+-- TODO: rename this to addFile
+loadIO :: (FileStore fiType fcType) -> FilePath -> IO Bool
+loadIO fs f = do
+  existingEntry <- readFileStoreEntryIO fs f
   case existingEntry of
     Just _ -> return False
     Nothing -> do
-      newEntry <- createFileStoreEntry f
+      newEntry <- createFileStoreEntryIO f
       _ <- atomically $ do
         oldList <- readTVar $ files fs
         -- Note: Using TList.cons would probably be faster than TList.append because we're not keeping a tlist
@@ -83,19 +131,19 @@ load fs f = do
         TList.append writeEnd newEntry
       return True
 
--- Load file contents into the store
-loadContents :: FileStore -> FileInfo -> Text -> IO Bool
-loadContents fs f contents = do
-  maybeEntry <- readFileStoreEntry fs f
+-- Load file cache entry into the store
+loadCacheIO :: (FileStore fiType fcType) -> FilePath -> fiType -> fcType -> IO Bool
+loadCacheIO fs f fi fc = do
+  maybeEntry <- readFileStoreEntryIO fs f
   case maybeEntry of
     Nothing -> return False
-    Just entry ->
-      (atomically $ writeTVar (fileContents entry) $ Just $ FileContents contents 0)
+    Just fileEntry ->
+      (atomically $ writeTVar (fileEntryCache fileEntry) $ Just $ FileCacheEntry { cacheEntryInfo = fi, cacheEntryContents = fc})
       >> return True
 
 -- Remove the file from the file store
-unload :: FileStore -> FileInfo -> IO ()
-unload fs f =
+unloadIO :: (FileStore fiType fcType) -> FilePath -> IO ()
+unloadIO fs f =
   atomically $ do
     oldTList <- readTVar $ files fs
     oldList <- TList.toList oldTList
@@ -103,30 +151,33 @@ unload fs f =
     newTLists <- TList.fromList newList
     writeTVar (files fs) (fst newTLists)
   where
-    notIsFile :: FileStoreEntry -> STM Bool
-    notIsFile entry = (liftM (/= f)) $ readTVar $ fileInfo entry
+    notIsFile :: (FileStoreEntry fiType fcType) -> STM Bool
+    notIsFile entry = (liftM (/= f)) $ readTVar $ fileEntryPath entry
 
 -- Generate a difference patch for a file in the store that was modified on disk
 --generateDiffPatch :: IO Patch
 --generateDiffPatch = return  
 
 -- Helper to generate a new file store entry (used internally)
-createFileStoreEntry :: FileInfo -> IO FileStoreEntry
-createFileStoreEntry info = do
-  tFileInfo <- newTVarIO info
-  tFileContents <- newTVarIO Nothing
-  return $ FileStoreEntry { fileInfo = tFileInfo, fileContents = tFileContents }
+createFileStoreEntryIO :: FilePath -> IO (FileStoreEntry fiType fcType)
+createFileStoreEntryIO f = do
+  tFilePath <- newTVarIO f
+  tFileCache <- newTVarIO Nothing
+  return $ FileStoreEntry { 
+      fileEntryPath = tFilePath, 
+      fileEntryCache = tFileCache 
+    }
 
 -- Read a specific file entry from the file store (used internally)
-readFileStoreEntry :: FileStore -> FilePath -> IO (Maybe FileStoreEntry)
-readFileStoreEntry fs f = do
+readFileStoreEntryIO :: (FileStore fiType fcType) -> FilePath -> IO (Maybe (FileStoreEntry fiType fcType))
+readFileStoreEntryIO fs f = do
   searchList <- 
     (readTVarIO $ files fs) 
     >>= (atomically . TList.toList)
   find searchList 
   where
     -- Try to find the file in the list of file store entry (atomically reading each file's entry)
-    find :: [FileStoreEntry] -> IO (Maybe FileStoreEntry)
+    find :: [FileStoreEntry fiType fcType] -> IO (Maybe (FileStoreEntry fiType fcType))
     find [] = return Nothing
     find (x:xs) = do 
       result <- matchFile x
@@ -134,7 +185,15 @@ readFileStoreEntry fs f = do
         then return $ Just x
         else find xs
     
-    matchFile :: FileStoreEntry -> IO Bool
+    matchFile :: (FileStoreEntry fiType fcType) -> IO Bool
     matchFile entry = 
-      (readTVarIO $ fileInfo entry)
+      (readTVarIO $ fileEntryPath entry)
       >>= return . (f ==)
+
+-- Read a specific file entry from the file store (used internally)
+readFileCacheEntryIO :: (FileStore fiType fcType) -> FilePath -> IO (Maybe (FileCacheEntry fiType fcType))
+readFileCacheEntryIO fs f = do
+  maybeFileEntry <- readFileStoreEntryIO fs f
+  case maybeFileEntry of
+    Nothing -> return Nothing
+    Just fileEntry -> fileEntryCacheIO fileEntry 

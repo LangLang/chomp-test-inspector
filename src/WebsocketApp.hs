@@ -17,8 +17,8 @@ import qualified Data.STM.TList as TList
 import Safe (readMay)
 
 -- Application modules
-import qualified STM.FileStore
-import qualified STM.FileStore as STM (FileStore())
+import qualified FileStore
+import FileStore (FileStore)
 import qualified STM.Clients as STM (Clients)
 import qualified STM.Clients as Clients
 import Message
@@ -28,7 +28,7 @@ type Clients = STM.Clients Hybi10
 
 -- Websocket application responsible for updating the client browser and receiving updates from the
 -- the client
-websocketApp :: Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> Request -> WebSockets Hybi10 ()
+websocketApp :: Clients -> FileStore -> STM.ServerMessages -> STM.Messages -> Request -> WebSockets Hybi10 ()
 websocketApp clients fileStore serverMessages clientMessages req = do
   WS.acceptRequest req
   liftIO $ putStrLn $ "Client connected (TODO: lookup client)..."
@@ -36,10 +36,10 @@ websocketApp clients fileStore serverMessages clientMessages req = do
   -- Send the list of files and their contents currently in the file store to the client application
   -- TODO: Read an "active" flag from the file store.
   --       If the file store is not active, then send ReloadFiles LostRootDirectory or similar instead
-  files <- liftIO $ STM.FileStore.allFiles fileStore
-  filesContents <- liftIO $  mapM (STM.FileStore.readFileContents fileStore) files
+  files <- liftIO $ FileStore.allFilesIO fileStore
+  maybeCacheEntries <- liftIO $  mapM (FileStore.readFileCacheEntryIO fileStore) files
   _ <- sendMessage $ ReloadFiles Connected files
-  _ <- zipWithM_ (\file contents -> sendMessage $ LoadFileContents file contents) files filesContents 
+  _ <- zipWithM_ sendLoadFileContents files maybeCacheEntries 
   
   -- Obtain a sink to use for sending data in another thread
   sink <- WS.getSink
@@ -52,13 +52,21 @@ websocketApp clients fileStore serverMessages clientMessages req = do
   
   -- TODO: Add the client information to a list
   -- TODO: forkIO $ processMessages serverMessages clientMessages
+  where
+    sendLoadFileContents :: FilePath -> Maybe FileStore.FileCacheEntry -> WebSockets Hybi10 ()
+    sendLoadFileContents file maybeCacheEntry =
+      sendMessage $ case maybeCacheEntry of
+        Nothing -> UnloadFileContents file
+        Just cacheEntry -> LoadFileContents file 
+          (FileStore.revision (FileStore.cacheEntryInfo cacheEntry))
+          (FileStore.cacheEntryContents cacheEntry)
 
 sendMessage :: TextProtocol p => Message -> WebSockets p () 
 sendMessage message = do
   liftIO $ putStrLn $ "...send " `append` (pack $ show message)
   sendTextData . pack $ show message
 
-listen :: Clients -> STM.FileStore -> STM.Messages -> WS.WebSockets Hybi10 ()
+listen :: Clients -> FileStore -> STM.Messages -> WS.WebSockets Hybi10 ()
 listen clients fileStore messages = do
   (flip WS.catchWsError catchDisconnect) receiveMessage
   return ()

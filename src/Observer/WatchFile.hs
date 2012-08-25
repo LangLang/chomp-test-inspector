@@ -5,7 +5,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Control.Concurrent
 import qualified System.FilePath as FilePath
-import qualified Data.Algorithm.Diff as Diff 
+import qualified Data.Algorithm.Diff as Diff
 
 -- Supporting modules
 -- https://github.com/timjb/haskell-operational-transformation
@@ -13,11 +13,10 @@ import qualified Control.OperationalTransformation.Text as OT
 
 -- Application modules
 import Message
-import FileStore
+import qualified FileStore
+import FileStore (FileStore)
 import qualified STM.Messages as STM (ServerMessages)
 import qualified STM.Messages
-import qualified STM.FileStore as STM (FileStore)
-import qualified STM.FileStore
 
 loadFileContents :: STM.ServerMessages -> FilePath -> FilePath -> IO ()
 loadFileContents messages rootPath path =
@@ -33,22 +32,28 @@ loadFileContents messages rootPath path =
 loadFilesContents :: STM.ServerMessages -> FilePath -> [FilePath] -> IO ()
 loadFilesContents messages rootPath = mapM_ (Observer.WatchFile.loadFileContents messages rootPath)
 
-loadFileModifications :: STM.ServerMessages -> STM.FileStore -> FilePath -> IO ()
+loadFileModifications :: STM.ServerMessages -> FileStore -> FilePath -> IO ()
 loadFileModifications messages fileStore path =
   (Control.Concurrent.forkIO $ do
-    maybeOldContents <- STM.FileStore.readFileContents fileStore path
+    maybeFileEntry <- FileStore.readFileStoreEntryIO fileStore path
     -- TODO: (IMPORTANT) increment revision numbers appropriately
     newContents <- load relPath path
-    case maybeOldContents of
+    case maybeFileEntry of
       Nothing -> enqueue $ ServerLoadFileContents path newContents
-      Just (FileContents oldContents rev) -> do
-        let operations = generateOps oldContents newContents
-        if length operations > 0 && (case operations of [OT.Retain _] -> False ; _ -> True) 
-          then (enqueue $ ServerOperationalTransform path rev operations)
-          else (T.putStrLn $ T.pack "No changes detected in the contents of the modified file, '" `T.append` (T.pack path) `T.append` (T.pack "'.")))
+      Just fileEntry -> do
+        maybeCacheEntry <- FileStore.fileEntryCacheIO fileEntry
+        case maybeCacheEntry of
+          Nothing -> enqueue $ ServerLoadFileContents path newContents
+          Just cacheEntry ->
+            let oldContents = FileStore.cacheEntryContents cacheEntry in
+            let oldInfo = FileStore.cacheEntryInfo cacheEntry in
+            let operations = generateOps oldContents newContents in
+            if length operations > 0 && (case operations of [OT.Retain _] -> False ; _ -> True) 
+              then (enqueue $ ServerOperationalTransform path (FileStore.revision oldInfo) operations)
+              else (T.putStrLn $ T.pack "No changes detected in the contents of the modified file, '" `T.append` (T.pack path) `T.append` (T.pack "'.")))
   >> (return ())
   where
-    rootPath = STM.FileStore.rootPath fileStore
+    rootPath = FileStore.rootPath fileStore
     relPath = rootPath `FilePath.combine` path
     enqueue = STM.Messages.enqueueServerMessage messages
     

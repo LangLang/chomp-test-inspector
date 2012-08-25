@@ -8,7 +8,8 @@ import Control.Concurrent.STM (TVar, atomically, tryReadTChan, readTVar, writeTV
 -- Application modules
 import Message
 import WebsocketApp (Clients)
-import qualified STM.FileStore as STM (FileStore)
+import qualified FileStore
+import FileStore (FileStore)
 import qualified STM.Messages as STM (Messages, ServerMessages)
 import ServerState
 import qualified Handler.StorageHandler
@@ -17,7 +18,7 @@ data DispatchMessage = ServerMessage ServerMessage | Message Message | Empty
 
 -- Dispatches messages from either a client or the server itself to the relevant message handler
 -- Returns false if no messages are available to be processed
-dispatch :: TVar ServerState -> Clients -> STM.FileStore -> STM.ServerMessages -> STM.Messages -> Maybe FilePath -> IO Bool
+dispatch :: TVar ServerState -> Clients -> FileStore -> STM.ServerMessages -> STM.Messages -> Maybe FilePath -> IO Bool
 dispatch serverStateT clients fileStore serverMessages clientMessages maybeExecPath = do
   -- If there are any messages in the server queue, process them first
   dispatchMessage <- atomically $ do
@@ -40,11 +41,11 @@ dispatch serverStateT clients fileStore serverMessages clientMessages maybeExecP
     Message message -> (processClientMessage fileStore serverMessages clients message) >> return True
     Empty -> return False
 
-processServerMessage :: STM.FileStore -> STM.ServerMessages -> Clients -> Maybe FilePath -> ServerMessage -> IO ()
+processServerMessage :: FileStore -> STM.ServerMessages -> Clients -> Maybe FilePath -> ServerMessage -> IO ()
 processServerMessage fileStore serverMessages clients maybeExecPath message =
   Handler.StorageHandler.handler fileStore serverMessages clients maybeExecPath message
 
-processClientMessage :: STM.FileStore -> STM.ServerMessages -> Clients -> Message -> IO ()
+processClientMessage :: FileStore -> STM.ServerMessages -> Clients -> Message -> IO ()
 processClientMessage fileStore serverMessages clients message =
   case message of
     -- Unknown message (error)

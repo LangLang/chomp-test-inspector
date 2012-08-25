@@ -88,31 +88,6 @@
         delete otClients[file];
         loadFile(file);
       },
-      LoadFileContents: function(file, maybeContents) {
-        var
-          isResult = isResultFile(file),
-          baseFilename = isResult? file.slice(0, file.length - ".output".length) : file,
-          $editors = $("#editors"),
-          $editor = $editors.find(".editor[data-filename='" + baseFilename + "']"),
-          selector = isResult? ".editor-result" : ".editor-source",
-          $editorInput = $editor.find(selector).find(".supersimple-editor-input");
-
-        if ($editor.length !== 1 || $editorInput.length !== 1)
-          return;
-        adt.recursive(adt({
-          FileContents: function(contents, revision) { 
-            otClients[file] = new Editor.OTClient(file, revision);
-            $editorInput.attr('contenteditable', !isResult);
-            Editor.update(file, contents);
-            Editor.highlight($editorInput.get(0));
-          },
-          Nothing: function() {
-            delete otClients[file];
-            $editorInput.attr('contenteditable', false);
-            Editor.clear(file);
-          }
-        }))(maybeContents);
-      },
       UnloadFile: function(storageEvent, file) { 
         var
           isResult = isResultFile(file),
@@ -133,6 +108,35 @@
               .attr('contenteditable', false);
           Editor.clear(file);
         }
+      },
+      LoadFileContents: function(file, revision, contents) {
+        var
+          isResult = isResultFile(file),
+          baseFilename = isResult? file.slice(0, file.length - ".output".length) : file,
+          $editors = $("#editors"),
+          $editor = $editors.find(".editor[data-filename='" + baseFilename + "']"),
+          selector = isResult? ".editor-result" : ".editor-source",
+          $editorInput = $editor.find(selector).find(".supersimple-editor-input");
+        if ($editor.length !== 1 || $editorInput.length !== 1)
+          return;
+        otClients[file] = new Editor.OTClient(file, revision);
+        $editorInput.attr('contenteditable', !isResult);
+        Editor.update(file, contents);
+        Editor.highlight($editorInput.get(0));
+      },
+      UnloadFileContents: function(file) {
+        var
+          isResult = isResultFile(file),
+          baseFilename = isResult? file.slice(0, file.length - ".output".length) : file,
+          $editors = $("#editors"),
+          $editor = $editors.find(".editor[data-filename='" + baseFilename + "']"),
+          selector = isResult? ".editor-result" : ".editor-source",
+          $editorInput = $editor.find(selector).find(".supersimple-editor-input");
+        if ($editor.length !== 1 || $editorInput.length !== 1)
+          return;
+        delete otClients[file];
+        $editorInput.attr('contenteditable', false);
+        Editor.clear(file);
       },
       OperationalTransform: function(file, revision, actions) {
         if (otClients[file] == null) {
