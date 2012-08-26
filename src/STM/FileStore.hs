@@ -1,6 +1,6 @@
 module STM.FileStore (
   FileStore,
-  FileCacheEntry,
+  FileCacheEntry(..),
   FileStoreEntry,
   rootPath,
   newIO,
@@ -16,9 +16,7 @@ module STM.FileStore (
   fileEntryPathT,
   fileEntryCacheT,
   fileEntryPathIO,
-  fileEntryCacheIO,
-  cacheEntryInfo,
-  cacheEntryContents
+  fileEntryCacheIO
 ) where
 
 -- The file store is a cache that reflects the contents of a location on some storage device.

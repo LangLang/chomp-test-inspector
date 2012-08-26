@@ -6,6 +6,7 @@ import qualified Data.Text.IO as T
 import qualified Control.Concurrent
 import qualified System.FilePath as FilePath
 import qualified Data.Algorithm.Diff as Diff
+import qualified System.IO (stderr)
 
 -- Supporting modules
 -- https://github.com/timjb/haskell-operational-transformation
@@ -45,12 +46,12 @@ loadFileModifications messages fileStore path =
         case maybeCacheEntry of
           Nothing -> enqueue $ ServerLoadFileContents path newContents
           Just cacheEntry ->
-            let oldContents = FileStore.cacheEntryContents cacheEntry in
-            let oldInfo = FileStore.cacheEntryInfo cacheEntry in
-            let operations = generateOps oldContents newContents in
-            if length operations > 0 && (case operations of [OT.Retain _] -> False ; _ -> True) 
-              then (enqueue $ ServerOperationalTransform path (FileStore.revision oldInfo) operations)
-              else (T.putStrLn $ T.pack "No changes detected in the contents of the modified file, '" `T.append` (T.pack path) `T.append` (T.pack "'.")))
+            let oldContents = FileStore.cacheEntryContents cacheEntry
+                operations = generateOps oldContents newContents 
+            in
+              if length operations > 0 && (case operations of [OT.Retain _] -> False ; _ -> True) 
+                then apply cacheEntry operations
+                else (T.putStrLn $ T.pack "No changes detected in the contents of the modified file, '" `T.append` (T.pack path) `T.append` (T.pack "'.")))
   >> (return ())
   where
     rootPath = FileStore.rootPath fileStore
@@ -71,7 +72,7 @@ loadFileModifications messages fileStore path =
         then [OT.Delete $ T.length os]
         else if T.null os
           then [OT.Insert ns]
-          else let (l, ros, rns) = getCommon os ns 
+          else let (l, ros, rns) = getCommon os ns
             in if l > 0
               then (OT.Retain l):(generateDiffOps $ getGroupedDiffText ros rns)
               else (generateDiffOps $ getGroupedDiffText  ros rns)
@@ -90,6 +91,21 @@ loadFileModifications messages fileStore path =
     getCommon t0 t1 = case T.commonPrefixes t0 t1 of
       Nothing -> (0, t0, t1)
       Just (prefix, r0, r1) -> (T.length prefix, r0, r1)  
+      
+    -- Apply OT operations to the file store's cache
+    apply :: FileStore.FileCacheEntry -> [OT.Action] -> IO ()
+    apply cacheEntry actions = 
+      let
+        rev = FileStore.revision $ FileStore.cacheEntryInfo cacheEntry 
+        otResult = FileStore.applyOperationalTransform cacheEntry (rev, actions)
+      in case otResult of
+        Left errorMessage -> T.hPutStrLn System.IO.stderr $ T.pack "Operational transform failed: " `T.append` (T.pack $ show errorMessage)
+        Right (actions', cacheEntry') ->
+          -- Store updated state in the file store
+          (FileStore.loadCacheIO fileStore path (FileStore.cacheEntryInfo cacheEntry') (FileStore.cacheEntryContents cacheEntry'))
+          -- Add the operational transform to the message queue (to be broadcast to the clients)
+          >> (enqueue $ ServerOperationalTransform path rev actions')
+ 
 
 load :: FilePath -> FilePath -> IO T.Text
 load relPath path = do

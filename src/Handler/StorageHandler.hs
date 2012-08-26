@@ -6,11 +6,6 @@ import qualified System.FilePath
 import qualified System.IO
 import Control.Monad (liftM)
 
--- Supporting modules
--- https://github.com/timjb/haskell-operational-transformation
-import qualified Control.OperationalTransformation.Server as OT
-import qualified Control.OperationalTransformation.Text as OT 
-
 -- Application modules
 import Message
 import qualified FileStore
@@ -68,21 +63,9 @@ handler fs sm c maybeExecPath message = case message of
     Observer.WatchFile.loadFileModifications sm fs file
 
   -- Notify clients of log messages
-  ServerOperationalTransform file rev actions -> do
-    maybeCacheEntry <- FileStore.readFileCacheEntryIO fs file
-    case maybeCacheEntry of
-      Nothing -> return ()
-      Just cacheEntry -> do
-        -- Apply OT operations to the file store's cache
-        let otResult = OT.applyOperation (FileStore.otServerState cacheEntry) rev (OT.TextOperation actions)
-        case otResult of
-          Left errorMessage -> System.IO.hPutStrLn System.IO.stderr $ "Operational transform failed: " ++ show errorMessage
-          Right (op', OT.ServerState revision' doc' ops') ->
-            let (OT.TextOperation actions') = op' in
-            -- Store updated state in the
-            (FileStore.loadCacheIO fs file (FileStore.FileInfo { FileStore.revision = revision', FileStore.operations = ops' }) doc')
-            -- Broadcast operations to clients
-            >> (STM.Clients.broadcastMessage c $ OperationalTransform file rev actions')
+  ServerOperationalTransform file rev actions ->
+    -- Broadcast operations to clients
+    (STM.Clients.broadcastMessage c $ OperationalTransform file rev actions)
   
   -- Execute the tool on all files
   ServerExecuteAll -> do
