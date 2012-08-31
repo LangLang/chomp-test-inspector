@@ -34,5 +34,6 @@
         transformedText = operation.apply(text);
       Editor.update(this.file, transformedText);
     };
+
     return OTClient;
   })(ot.Client);
