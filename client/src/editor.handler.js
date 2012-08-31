@@ -156,6 +156,7 @@
         for (i = 0; i < actions.length; ++i)
           opAction(actions[i]);
         otClients[file].applyServer(op);
+        Editor.highlight(Editor.DOM.getInput(file));
       },
       ConnectionClosed: function() {
         otClients = {};
