@@ -157,7 +157,7 @@
             if (i == sourceStr.length || resultStr[i] != sourceStr[i])
               break;
           opHandler.backspace(sourceStr.slice(i));
-          opHandler.insert(result.slice(i));
+          opHandler.insert(resultStr.slice(i));
           return result;
         };
 
