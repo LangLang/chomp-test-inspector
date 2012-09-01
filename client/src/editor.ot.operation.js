@@ -22,12 +22,14 @@
 
     // Override methods
     OTOperation.prototype.constructor = OTOperation;
+
+    // New methods
     OTOperation.prototype.backspace = function (str) {
       // This operation could be provided by simply merging two sets of operations, however this method is commonly used
       // in the editor and should be quite a bit faster
-      assert(typeof str === 'string');
+      //assert(typeof str === 'string');
       if (str.length === 0) { return this; }
-      assert(this.targetLength >= str.length);
+      //assert(this.targetLength >= str.length);
       this.targetLength -= str.length;
       var
         remaining = str.length,
@@ -75,7 +77,7 @@
 
       // Create a new delete op
       if (d > 0)
-        this.ops.push({ 'delete': dStr });
+        this.ops.push({ 'delete': dStr.reverse().join('') });
       
       return this;
     };
