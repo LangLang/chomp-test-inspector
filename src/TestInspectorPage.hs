@@ -81,6 +81,7 @@ jsFiles = [
     $(jsFile "client/src/editor.handler.js"),
     $(jsFile "client/src/statusbar.handler.js"),
     $(jsFile "client/src/editor.ot.client.js"),
+    $(jsFile "client/src/editor.ot.operation.js"),
     $(jsFile "client/src/editor.events.js"),
     $(jsFile "client/src/events.init.js"),
     $(jsFile "client/src/footer.js")
@@ -103,6 +104,7 @@ jsFiles = [
     $(jsFileReload "client/src/editor.handler.js"),
     $(jsFileReload "client/src/statusbar.handler.js"),
     $(jsFileReload "client/src/editor.ot.client.js"),
+    $(jsFileReload "client/src/editor.ot.operation.js"),
     $(jsFileReload "client/src/editor.events.js"),
     $(jsFileReload "client/src/events.init.js"),
     $(jsFileReload "client/src/footer.js")
