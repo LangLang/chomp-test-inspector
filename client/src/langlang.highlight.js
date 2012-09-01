@@ -13,10 +13,10 @@
         return html.span.apply(null, [{ class: 'syntax-' + this._tag }].concat(args));
       }
     }));
-    LangLang.highlight = function(str, caretPos, operations) {
+    LangLang.highlight = function(str, opHandler) {
       var 
-        parseResult = LangLang.parse(str, caretPos, operations),
-        highlightResult = { text: str, html: [], caretPos: parseResult.caretPos },
+        parseResult = LangLang.parse(str, opHandler),
+        highlightResult = { text: str, html: [] },
         i;
       for (i = 0; i < parseResult.ast.length; ++i)
         highlightResult.html.push(highlighter(parseResult.ast[i]));

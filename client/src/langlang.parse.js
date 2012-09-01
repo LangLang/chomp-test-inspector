@@ -128,47 +128,17 @@
         return result? [result.apply(null, resultArgs)] : resultArgs;
       };
     
-    LangLang.parse = function(input, caretPos, operations) {
-      // Extra operations to perform during lexical analysis (maintain caret position and generate transform operations)
+    LangLang.parse = function(input, opHandler) {
+      // Extra operations to perform during lexical analysis (e.g. maintain caret position and generate transform operations)
       var
-        caret = (function(caretPos){
-          var 
-            caretP = caretPos, 
-            streamP = 0;
-          return {
-            retain: function(n) { streamP += n; },
-            insert: function(str) { 
-              if (streamP <= caretP)
-                caretP += str.length;
-              streamP += str.length;
-            },
-            backspace: function(n) {
-              var 
-                streamAhead = Math.max(streamP - caretP, 0),
-                d = Math.max(n - streamAhead, 0);
-              streamP -= n;
-              caretP -= d;
-            },
-            'delete': function(n) {
-              var
-                caretAhead = Math.max(caretP - streamP, 0),
-                d = Math.min(n, caretAhead);
-              caretP -= d;
-            },
-            getPosition: function() { return caretP; }
-          };
-        })(caretPos),
         replace = function(lexeme) {
           var result = lexReplace(lexeme);
           if (result == lexeme) {
-            caret.retain(result.length);
-            operations.retain(result.length);
+            opHandler.retain(result.length);
           }
           else {
-            caret.delete(lexeme.length);
-            operations.delete(lexeme.length);
-            caret.insert(result);
-            operations.insert(result);
+            opHandler.delete(lexeme);
+            opHandler.insert(result);
           }
           return result;
         },
@@ -186,11 +156,8 @@
           for (i = 0; i < resultStr.length; ++i)
             if (i == sourceStr.length || resultStr[i] != sourceStr[i])
               break;
-          caret.backspace(sourceStr.length - i);
-          operations.backspace(sourceStr.length - i);
-          insertChars = result.slice(i); 
-          caret.insert(insertChars);
-          operations.insert(insertChars);
+          opHandler.backspace(sourceStr.slice(i));
+          opHandler.insert(result.slice(i));
           return result;
         };
 
@@ -243,7 +210,7 @@
       }
       if (lexResult.length == 1)
         parse(lexResult.shift());
-      return { ast: astResult, caretPos: caret.getPosition() };
+      return { ast: astResult };
     };
 
   })();

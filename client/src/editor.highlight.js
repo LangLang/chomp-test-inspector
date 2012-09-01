@@ -111,19 +111,47 @@
     Editor.highlight = function(domElement) {
       var 
         originalCaretPos = getCaretOffset(domElement),
-        operations = {
-          retain: function(n)   { console.log("(Highlight) RETAIN   ", n); },
-          insert: function(str) { console.log("(Highlight) INSERT   ", "\"" + str + "\""); },
-          backspace: function(n){ console.log("(Highlight) BACKSPACE", n); },
-          delete: function(n)   { console.log("(Highlight) DELETE   ", n); }
+        caret = (function(caretPos){
+          var 
+            caretP = caretPos, 
+            streamP = 0;
+          return {
+            retain: function(n) { streamP += n; },
+            insert: function(str) { 
+              if (streamP <= caretP)
+                caretP += str.length;
+              streamP += str.length;
+            },
+            backspace: function(str) {
+              var 
+                streamAhead = Math.max(streamP - caretP, 0),
+                d = Math.max(str.length - streamAhead, 0);
+              streamP -= str.length;
+              caretP -= d;
+            },
+            'delete': function(str) {
+              var
+                caretAhead = Math.max(caretP - streamP, 0),
+                d = Math.min(str.length, caretAhead);
+              caretP -= d;
+            },
+            getPosition: function() { return caretP; }
+          };
+        })(originalCaretPos),
+        opHandler = {
+          retain: function(n)     { caret.retain(n); console.log("(Highlight) RETAIN   ", n); },
+          insert: function(str)   { caret.insert(str); console.log("(Highlight) INSERT   ", "\"" + str + "\""); },
+          backspace: function(str){ caret.backspace(str); console.log("(Highlight) BACKSPACE", "\"" + str + "\""); },
+          delete: function(str)   { caret.delete(str); console.log("(Highlight) DELETE   ", "\"" + str + "\""); }
         },
-        result = LangLang.highlight(getTextContent(domElement), originalCaretPos, operations),
+        result = LangLang.highlight(getTextContent(domElement), opHandler),
         i;
       domElement.innerHTML = "";
       for (var i = 0; i < result.html.length; ++i)
         domElement.appendChild(result.html[i]);
-      if (result.caretPos != null)
-        setCaretOffset(domElement, result.caretPos);
+      if (originalCaretPos != null)
+        setCaretOffset(domElement, caret.getPosition());
+      console.log(result);
       return result;
     };
   })(html.evalCons);
