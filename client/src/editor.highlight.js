@@ -111,7 +111,13 @@
     Editor.highlight = function(domElement) {
       var 
         originalCaretPos = getCaretOffset(domElement),
-        result = LangLang.highlight(getTextContent(domElement), originalCaretPos),
+        operations = {
+          retain: function(n)   { console.log("(Highlight) RETAIN   ", n); },
+          insert: function(str) { console.log("(Highlight) INSERT   ", "\"" + str + "\""); },
+          backspace: function(n){ console.log("(Highlight) BACKSPACE", n); },
+          delete: function(n)   { console.log("(Highlight) DELETE   ", n); }
+        },
+        result = LangLang.highlight(getTextContent(domElement), originalCaretPos, operations),
         i;
       domElement.innerHTML = "";
       for (var i = 0; i < result.html.length; ++i)

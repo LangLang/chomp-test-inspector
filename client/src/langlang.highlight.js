@@ -13,9 +13,9 @@
         return html.span.apply(null, [{ class: 'syntax-' + this._tag }].concat(args));
       }
     }));
-    LangLang.highlight = function(str, caretPos) {
+    LangLang.highlight = function(str, caretPos, operations) {
       var 
-        parseResult = LangLang.parse(str, caretPos),
+        parseResult = LangLang.parse(str, caretPos, operations),
         highlightResult = { text: str, html: [], caretPos: parseResult.caretPos },
         i;
       for (i = 0; i < parseResult.ast.length; ++i)

@@ -1,6 +1,6 @@
   var LangLang = LangLang || {};
   (function(){
-    var 
+    var
       getTag = adt({_: function(){ return this._tag; } }),
       lexCons = adt(
         '#',
@@ -17,8 +17,10 @@
         return lexeme;
       },
       lexReduce = function(left, right) {
-        if (left == null)
+        if (left == null || left.length == 0)
           return [right];
+        if (right.length == 0)
+          return [left];
         var
           lexReduceHash = {
             '->': '→',
@@ -126,12 +128,79 @@
         return result? [result.apply(null, resultArgs)] : resultArgs;
       };
     
-    LangLang.parse = function(str, caretPos) {
+    LangLang.parse = function(input, caretPos, operations) {
+      // Extra operations to perform during lexical analysis (maintain caret position and generate transform operations)
+      var
+        caret = (function(caretPos){
+          var 
+            caretP = caretPos, 
+            streamP = 0;
+          return {
+            retain: function(n) { streamP += n; },
+            insert: function(str) { 
+              if (streamP <= caretP)
+                caretP += str.length;
+              streamP += str.length;
+            },
+            backspace: function(n) {
+              var 
+                streamAhead = Math.max(streamP - caretP, 0),
+                d = Math.max(n - streamAhead, 0);
+              streamP -= n;
+              caretP -= d;
+            },
+            'delete': function(n) {
+              var
+                caretAhead = Math.max(caretP - streamP, 0),
+                d = Math.min(n, caretAhead);
+              caretP -= d;
+            },
+            getPosition: function() { return caretP; }
+          };
+        })(caretPos),
+        replace = function(lexeme) {
+          var result = lexReplace(lexeme);
+          if (result == lexeme) {
+            caret.retain(result.length);
+            operations.retain(result.length);
+          }
+          else {
+            caret.delete(lexeme.length);
+            operations.delete(lexeme.length);
+            caret.insert(result);
+            operations.insert(result);
+          }
+          return result;
+        },
+        reduce = function(left, right) {
+          var 
+            i,
+            sourceStr = left + right,
+            result = lexReduce(left, right),
+            resultStr = result.join(''),
+            insertChars;
+          
+          if (resultStr == sourceStr)
+            return result;
+          // Get the longest common subsequence on the left of the result
+          for (i = 0; i < resultStr.length; ++i)
+            if (i == sourceStr.length || resultStr[i] != sourceStr[i])
+              break;
+          caret.backspace(sourceStr.length - i);
+          operations.backspace(sourceStr.length - i);
+          insertChars = result.slice(i); 
+          caret.insert(insertChars);
+          operations.insert(insertChars);
+          return result;
+        };
+
+      // Main lex analysis loop
       var
         lexResult = [""], 
         lexHead,
         lexeme,
-        lexPos,
+        srcHead,
+        src,
         lexReduction,
         //astStack = [],
         astResult = [], 
@@ -159,27 +228,14 @@
         astResult = astResult.concat(r);
       };
 
-      var updateCaretPos = function(inputLength, reducedLength) {
-        var offset = reducedLength - inputLength;
-        // Subtract the reduction in length from both the caret and the lex position
-        if (caretPos != null && lexPos <= caretPos)
-          caretPos += offset;
-        lexPos += offset;
-      };
-
-      lexPos = 0;
-      for (i = 0; i < str.length; ++i) {
-        // Update the lex position from the input
-        lexPos += 1;
+      for (i = 0; i < input.length; ++i) {
         // Replace simple characters in the input stream (producing tiny "lexemes" - mostly characters)
-        lexeme = lexReplace(str[i]);
-        updateCaretPos(1, lexeme.length);
+        lexeme = replace(input[i]);
         // Reduce combinations of lexemes into new lexemes
         for (j = 0; j < lexeme.length; ++j) {
           lexHead = lexResult.pop();
-          lexReduction = lexReduce(lexHead, lexeme[j]);
+          lexReduction = reduce(lexHead, lexeme[j]);
           lexResult = lexResult.concat(lexReduction);
-          updateCaretPos(lexHead.length + lexeme[j].length, lexReduction.join('').length);
         }
         // Parse (stream) lexical tokens into a syntax tree
         while (lexResult.length > 1)
@@ -187,7 +243,7 @@
       }
       if (lexResult.length == 1)
         parse(lexResult.shift());
-      return { ast: astResult, caretPos: caretPos };
+      return { ast: astResult, caretPos: caret.getPosition() };
     };
 
   })();
