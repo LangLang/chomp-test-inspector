@@ -23,6 +23,11 @@
 
     // Override methods
     OTClient.prototype.constructor = OTClient;
+
+    OTClient.prototype.createOperation = function () {
+      return new Editor.OTOperation(this.callMethodForState('newRevision'));
+    };
+
     OTClient.prototype.sendOperation = function (operation) {
       console.log("SEND OPERATION", operation);
       // MessageService.send(state.ws, serialized operation)

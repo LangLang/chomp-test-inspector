@@ -108,8 +108,9 @@
         selection.addRange(range);
       };
 
-    Editor.highlight = function(domElement) {
+    Editor.highlight = function(file) {
       var 
+        domElement = Editor.DOM.getInput(file),
         originalCaretPos = getCaretOffset(domElement),
         caret = (function(caretPos){
           var 
@@ -138,11 +139,17 @@
             getPosition: function() { return caretP; }
           };
         })(originalCaretPos),
+        otClient = Editor.getOTClient(file),
+        otOperations = otClient.createOperation(),
         opHandler = {
-          retain: function(n)     { caret.retain(n); console.log("(Highlight) RETAIN   ", n); },
-          insert: function(str)   { caret.insert(str); console.log("(Highlight) INSERT   ", "\"" + str + "\""); },
-          backspace: function(str){ caret.backspace(str); console.log("(Highlight) BACKSPACE", "\"" + str + "\""); },
-          delete: function(str)   { caret.delete(str); console.log("(Highlight) DELETE   ", "\"" + str + "\""); }
+          retain: function(n)     { 
+            caret.retain(n);
+            otOperations.retain(n); },
+          insert: function(str)   {
+            caret.insert(str); 
+            otOperations.insert(str); },
+          backspace: function(str){ caret.backspace(str); otOperations.backspace(str); },
+          delete: function(str)   { caret.delete(str); otOperations.delete(str); }
         },
         result = LangLang.highlight(getTextContent(domElement), opHandler),
         i;
@@ -151,7 +158,7 @@
         domElement.appendChild(result.html[i]);
       if (originalCaretPos != null)
         setCaretOffset(domElement, caret.getPosition());
-      console.log(result);
+      console.log("OT OPERATIONS:",otOperations);
       return result;
     };
   })(html.evalCons);

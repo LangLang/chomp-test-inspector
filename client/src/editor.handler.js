@@ -59,6 +59,10 @@
           .empty()
       };
 
+    Editor.getOTClient = function(file) {
+      return otClients[file];
+    };
+
     Editor.handler = adt.recursive(adt({
       Connected: enableEditor,
       RestoredRootDirectory: enableEditor,
@@ -122,7 +126,7 @@
         otClients[file] = new Editor.OTClient(file, revision);
         $editorInput.attr('contenteditable', !isResult);
         Editor.update(file, contents);
-        Editor.highlight($editorInput.get(0));
+        Editor.highlight(file);
       },
       UnloadFileContents: function(file) {
         var
@@ -156,7 +160,7 @@
         for (i = 0; i < actions.length; ++i)
           opAction(actions[i]);
         otClients[file].applyServer(op);
-        Editor.highlight(Editor.DOM.getInput(file));
+        Editor.highlight(file);
       },
       ConnectionClosed: function() {
         otClients = {};
