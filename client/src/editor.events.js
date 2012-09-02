@@ -1,6 +1,8 @@
   var Editor = Editor || {};
   (function(){
     Editor.bindEvents = function() {
+      var dirtyFiles = {}; // Files that need to be reformatted
+
       // Handle all printable characters
       $('#editors').on('keypress', '.supersimple-editor-input', function(e){
         var 
@@ -13,11 +15,16 @@
           caretOffset,
           otClient,
           otOperations;
-        console.log("keypress", charCode, e);
 
         // Ignore non-printable characters
         if (charCode == 0)
           return;
+
+        // Test whether DOM element contains a filename attribute (and add ".output" for result files)
+        if (filename == null)
+          console.error("No filename attribute found for editor.")
+        if (isResult)
+          filename += ".output";
 
         // TODO: Handle the case where there's already a selection (to be replaced) in the editor
 
@@ -40,10 +47,12 @@
             otOperations.insert(String.fromCharCode(charCode));
         }
         otOperations.retain(textContent.length - caretOffset);
-        console.log("keypress", otOperations);
 
         // Apply operations to the client
         otClient.applyClient(otOperations);
+
+        // Mark the file as dirty (needs highlight/reformat)
+        dirtyFiles[filename] = true;
       });
 
       // Handle all non-printable characters
@@ -59,6 +68,7 @@
           otClient,
           otOperations,
           remainingCharacters;
+        // Test whether DOM element contains a filename attribute (and add ".output" for result files)
         if (filename == null)
           console.error("No filename attribute found for editor.")
         if (isResult)
@@ -118,13 +128,36 @@
           //case 88: // V (ctrl+x = cut)
         };
         otOperations.retain(remainingCharacters);
-        console.log("keydown", otOperations);
 
         // Apply operations to the client
         otClient.applyClient(otOperations);
 
-        // Perform the highlight operation to reformat the code
+        // Mark the file as dirty (needs highlight/reformat)
+        dirtyFiles[filename] = true;
+      });
+
+      // Reformat the code once the key is released
+      $('#editors').on('keyup', '.supersimple-editor-input', function(e){
+        var 
+          $editorInput = $(e.target),
+          $editor = $editorInput.parent().parent(),
+          filename = $editor.attr("data-filename"),
+          isResult = $editorInput.hasClass("editor-result");
+        // Test whether DOM element contains a filename attribute (and add ".output" for result files)
+        if (filename == null)
+          console.error("No filename attribute found for editor.")
+        if (isResult)
+          filename += ".output";
+
+        // Test whether the file needs to be reformatted
+        if (!dirtyFiles[filename])
+          return;
+
+        // Highlight and reformat the modified code
         Editor.highlight(filename);
+
+        // Unmark the file
+        dirtyFiles[filename] = false;
       });
     };
   })();
