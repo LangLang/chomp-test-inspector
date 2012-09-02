@@ -15,17 +15,17 @@
                 caretP += str.length;
               streamP += str.length;
             },
-            backspace: function(str) {
+            backspace: function(n) {
               var 
                 streamAhead = Math.max(streamP - caretP, 0),
-                d = Math.max(str.length - streamAhead, 0);
-              streamP -= str.length;
+                d = Math.max(n - streamAhead, 0);
+              streamP -= n;
               caretP -= d;
             },
-            'delete': function(str) {
+            'delete': function(n) {
               var
                 caretAhead = Math.max(caretP - streamP, 0),
-                d = Math.min(str.length, caretAhead);
+                d = Math.min(n, caretAhead);
               caretP -= d;
             },
             getPosition: function() { return caretP; }
@@ -40,8 +40,8 @@
           insert: function(str)   {
             caret.insert(str); 
             otOperations.insert(str); },
-          backspace: function(str){ caret.backspace(str); otOperations.backspace(str); },
-          delete: function(str)   { caret.delete(str); otOperations.delete(str); }
+          backspace: function(n){ caret.backspace(n); otOperations.backspace(n); },
+          delete: function(n)   { caret.delete(n); otOperations.delete(n); }
         },
         result = LangLang.highlight((domElement.innerText? domElement.innerText : domElement.textContent), opHandler),
         i;

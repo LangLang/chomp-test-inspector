@@ -88,8 +88,10 @@
 
         switch (keyCode) {
           case 8: // Backspace
+            if (caretOffset == 0) return;
           //case 45: // Insert
           case 46: // Delete
+            if (caretOffset == textContent.length) return;
           //case 86: // V (ctrl+v = paste)
           //case 88: // V (ctrl+x = cut)
             break;
@@ -105,15 +107,12 @@
 
         switch (keyCode) {
           case 8: // Backspace
-            if (caretOffset > 0)
-              otOperations.backspace(textContent[caretOffset - 1]);
+            otOperations.backspace(1);
             break;
           //case 45: // Insert
           case 46: // Delete
-            if (caretOffset < textContent.length) {
-              otOperations.delete(textContent[caretOffset]);
-              remainingCharacters -= 1;
-            }
+            otOperations.delete(1);
+            remainingCharacters -= 1;
             break;
           //case 86: // V (ctrl+v = paste)
           //case 88: // V (ctrl+x = cut)

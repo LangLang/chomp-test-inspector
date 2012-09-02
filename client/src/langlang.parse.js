@@ -137,7 +137,7 @@
             opHandler.retain(result.length);
           }
           else {
-            opHandler.delete(lexeme);
+            opHandler.delete(lexeme.length);
             opHandler.insert(result);
           }
           return result;
@@ -156,7 +156,7 @@
           for (i = 0; i < resultStr.length; ++i)
             if (i == sourceStr.length || resultStr[i] != sourceStr[i])
               break;
-          opHandler.backspace(sourceStr.slice(i));
+          opHandler.backspace(sourceStr.length - i);
           opHandler.insert(resultStr.slice(i));
           return result;
         };

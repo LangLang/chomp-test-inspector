@@ -24,20 +24,19 @@
     OTOperation.prototype.constructor = OTOperation;
 
     // New methods
-    OTOperation.prototype.backspace = function (str) {
+    OTOperation.prototype.backspace = function (n) {
       // This operation could be provided by simply merging two sets of operations, however this method is commonly used
       // in the editor and should be quite a bit faster
-      //assert(typeof str === 'string');
-      if (str.length === 0) { return this; }
-      //assert(this.targetLength >= str.length);
-      this.targetLength -= str.length;
+      //assert(typeof n === 'number');
+      if (n === 0) return this;
+      //assert(this.targetLength >= n);
+      this.targetLength -= n;
       var
-        remaining = str.length,
+        remaining = n,
         lastOp = this.ops[this.ops.length-1],
         followOps = [],
         d = 0,
-        dd,
-        dStr = [];
+        dd;
       while (lastOp && remaining > 0) {
         if (lastOp.retain) {
           if (lastOp.retain <= remaining) {
@@ -51,7 +50,6 @@
             remaining = 0;
           }
           d += dd;
-          dStr.push(str.slice(remaining, remaining + dd));
         }
         else if (lastOp.insert) {
           if (lastOp.insert <= remaining) {
@@ -67,8 +65,7 @@
           d += dd;
         }
         else if (lastOp.delete) {
-          dd = lastOp.delete.length;
-          dStr.push(lastOp.delete);
+          dd = lastOp.delete;
           this.ops.pop();
           d += dd;
         }
@@ -77,7 +74,7 @@
 
       // Create a new delete op
       if (d > 0)
-        this.ops.push({ 'delete': dStr.reverse().join('') });
+        this.ops.push({ 'delete': d });
       
       return this;
     };
