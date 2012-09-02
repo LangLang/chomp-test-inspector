@@ -158,7 +158,7 @@
         domElement.appendChild(result.html[i]);
       if (originalCaretPos != null)
         setCaretOffset(domElement, caret.getPosition());
-      console.log("OT OPERATIONS:",otOperations);
+      otClient.applyClient(otOperations);
       return result;
     };
   })(html.evalCons);
