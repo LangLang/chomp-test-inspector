@@ -153,10 +153,10 @@
           i,
           op = new ot.Operation(revision),
           opAction = adt({
-          'Retain': function(n) { op.retain(n); },
-          'Insert': function(t) { op.insert(t); },
-          'Delete': function(n) { op.delete(n); }
-        });
+            'Retain': function(n) { op.retain(n); },
+            'Insert': function(t) { op.insert(t); },
+            'Delete': function(n) { op.delete(n); }
+          });
         for (i = 0; i < actions.length; ++i)
           opAction(actions[i]);
         otClients[file].applyServer(op);

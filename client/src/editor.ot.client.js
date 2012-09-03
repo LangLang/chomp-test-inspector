@@ -29,8 +29,26 @@
     };
 
     OTClient.prototype.sendOperation = function (operation) {
-      console.log("SEND OPERATION", operation);
-      // MessageService.send(state.ws, serialized operation)
+      var 
+        i,
+        op,
+        actions = [],
+        message;
+      
+      // Serialize message
+      for (i = 0; i < operation.ops; ++i) {
+        op = operation.ops[i];
+        if (op.retain)
+          actions.push(OTAction.Retain(op.retain));
+        else if (op.delete)
+          actions.push(OTAction.Delete(op.delete));
+        else
+          actions.push(OTAction.Insert(op.insert));
+      }
+      message = Message.OperationalTransform(this.file, operation.revision, actions);
+
+      // Send the serialized message to the server
+      MessageService.send(state.ws, message);
     };
 
     OTClient.prototype.applyOperation = function (operation) {
