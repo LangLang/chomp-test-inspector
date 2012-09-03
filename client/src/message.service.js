@@ -21,6 +21,8 @@
     };
     // Send a message to the server
     MessageService.send = function(ws, message) {
-      ws.send(adt.serialize(message));
+      var str = adt.serialize(message);
+      ws.send(str);
+      console.log("Message sent...", {ws: ws, message: str});
     };
   })();
