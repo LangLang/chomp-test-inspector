@@ -36,7 +36,7 @@
         message;
       
       // Serialize message
-      for (i = 0; i < operation.ops; ++i) {
+      for (i = 0; i < operation.ops.length; ++i) {
         op = operation.ops[i];
         if (op.retain)
           actions.push(OTAction.Retain(op.retain));
