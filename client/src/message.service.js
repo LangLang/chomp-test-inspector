@@ -11,7 +11,7 @@
         // TODO: do something meaningful here
       };
       ws.onmessage = function(event) {
-        console.log("Message received...", event);
+        console.log("Message received...\n\t", event);
         _publish(handlers, adt.deserialize(event.data));
       };
       ws.onclose = function() {
@@ -23,6 +23,6 @@
     MessageService.send = function(ws, message) {
       var str = adt.serialize(message);
       ws.send(str);
-      console.log("Message sent...", {ws: ws, message: str});
+      console.log("Message sent...\n\t", {ws: ws, message: str});
     };
   })();
