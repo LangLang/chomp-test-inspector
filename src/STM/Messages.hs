@@ -22,7 +22,6 @@ enqueueMessage m = atomically . (writeTChan m)
 enqueueServerMessage :: ServerMessages -> ServerMessage -> IO ()
 enqueueServerMessage m = atomically . (writeTChan m)
 
-
 {-- Clear all the messages from the queue without processing them using multiple atomic operations 
 clearMessages :: Messages -> IO ()
 clearMessages m = do

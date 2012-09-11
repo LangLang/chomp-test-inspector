@@ -47,7 +47,7 @@ executable chomp-test-inspector
                  TestInspectorPage STM.FileStore STM.Messages
                  Observer.WatchDirectory Observer.WatchFile
                  Observer.WatchExecutable MessageDispatch ServerState
-                 STM.Clients Handler.StorageHandler
+                 STM.Clients Handler.ServerHandler Handler.ClientHandler
   ghc-prof-options:
   ghc-shared-options:
   hugs-options:

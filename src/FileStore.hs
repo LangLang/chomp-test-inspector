@@ -19,7 +19,7 @@ import qualified Control.OperationalTransformation.Text as OT
 import qualified Control.OperationalTransformation.Server as OT
 
 -- Application modules
-import STM.FileStore hiding (FileStore, FileStoreEntry, FileCacheEntry) 
+import STM.FileStore hiding (FileStore, FileStoreEntry, FileCacheEntry)
 import qualified STM.FileStore as STM (FileStore, FileStoreEntry, FileCacheEntry(..))
 
 data FileInfo = FileInfo { 

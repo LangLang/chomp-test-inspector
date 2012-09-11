@@ -74,7 +74,7 @@ listen serverStateT clients fileStore messages = do
     then return ()
     else do 
       state <- liftIO $ readTVarIO serverStateT 
-      if not $ state in [Terminating, Terminated]
+      if not $ state `elem` [Terminating, Terminated]
         then listen serverStateT clients fileStore messages
         else return ()
   where

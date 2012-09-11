@@ -1,4 +1,4 @@
-module Handler.StorageHandler (handler) where
+module Handler.ServerHandler (handler) where
 
 -- System modules
 import Data.Maybe (isJust, fromJust)
@@ -62,7 +62,7 @@ handler fs sm c maybeExecPath message = case message of
   ServerLoadModifications file ->
     Observer.WatchFile.loadFileModifications sm fs file
 
-  -- Notify clients of log messages
+  -- Broadcast operational transforms to the clients
   ServerOperationalTransform file rev actions ->
     -- Broadcast operations to clients
     (STM.Clients.broadcastMessage c $ OperationalTransform file rev actions)

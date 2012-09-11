@@ -11,7 +11,8 @@ import WebsocketApp (Clients)
 import FileStore (FileStore)
 import qualified STM.Messages as STM (Messages, ServerMessages)
 import ServerState
-import qualified Handler.StorageHandler
+import qualified Handler.ServerHandler
+import qualified Handler.ClientHandler
 
 data DispatchMessage = ServerMessage ServerMessage | Message Message | Empty
 
@@ -42,10 +43,8 @@ dispatch serverStateT clients fileStore serverMessages clientMessages maybeExecP
 
 processServerMessage :: FileStore -> STM.ServerMessages -> Clients -> Maybe FilePath -> ServerMessage -> IO ()
 processServerMessage fileStore serverMessages clients maybeExecPath message =
-  Handler.StorageHandler.handler fileStore serverMessages clients maybeExecPath message
+  Handler.ServerHandler.handler fileStore serverMessages clients maybeExecPath message
 
 processClientMessage :: FileStore -> STM.ServerMessages -> Clients -> Message -> IO ()
 processClientMessage fileStore serverMessages clients message =
-  case message of
-    -- Unknown message (error)
-    _ -> undefined
+  Handler.ClientHandler.handler fileStore serverMessages clients message

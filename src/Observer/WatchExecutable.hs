@@ -91,7 +91,6 @@ inotifyEvent messages event = do
 -- Run the executable, adding all log messages to the message queue
 run :: STM.ServerMessages -> FilePath -> FilePath -> FilePath -> IO ()
 run serverMessages execPath rootPath path = do
-  -- TODO: try/catch ?
   (_, Just hStdOut, Just hStdErr, hProcess) <- 
     P.createProcess (P.proc execPath [relPath, outputPath])
     { P.std_out = P.CreatePipe, P.std_err = P.CreatePipe }
