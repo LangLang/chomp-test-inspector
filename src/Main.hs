@@ -30,7 +30,8 @@ main = do
   args <- System.Environment.getArgs
   [watchPath, execPath] <- if length args == 0
     then putStrLn "No arguments supplied, using the current path as the watch directory." 
-      >> System.Directory.getCurrentDirectory >>= \dir -> return [dir, defaultExecPath]
+      >> System.Directory.getCurrentDirectory 
+      >>= \dir -> return [dir, defaultExecPath]
     else if head args == "--help"
       then printUsage >> System.Exit.exitSuccess
       else return $ if length args == 2 then args else [head args, defaultExecPath]
@@ -60,7 +61,7 @@ main = do
   _ <- forkIO $ loopDispatch serverStateT clients fileStore serverMessages clientMessages maybeAbsExecPath
   
   -- Run the front controllers
-  Warp.runSettings (webAppSettings clients fileStore serverMessages clientMessages) webApp
+  Warp.runSettings (webAppSettings serverStateT clients fileStore serverMessages clientMessages) webApp
   
   -- Stop the asynchronous observers
   case maybeWatchExecutableHandle of
@@ -106,8 +107,8 @@ foreverUntilIO loop check = do
 
 -- Set up the web application (front controller) with the websocket application (front controller)
 -- and shared resources (the file store and incoming message queues)
-webAppSettings :: Clients -> FileStore -> STM.ServerMessages -> STM.Messages -> Warp.Settings
-webAppSettings clients fileStore serverMessages clientMessages = Warp.defaultSettings
+webAppSettings :: TVar ServerState -> Clients -> FileStore -> STM.ServerMessages -> STM.Messages -> Warp.Settings
+webAppSettings serverStateT clients fileStore serverMessages clientMessages = Warp.defaultSettings
   { Warp.settingsPort = 8080
-  , Warp.settingsIntercept = interceptWith defaultWebSocketsOptions $ websocketApp clients fileStore serverMessages clientMessages
+  , Warp.settingsIntercept = interceptWith defaultWebSocketsOptions $ websocketApp serverStateT clients fileStore serverMessages clientMessages
   }
