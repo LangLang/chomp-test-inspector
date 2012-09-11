@@ -1,4 +1,4 @@
-module Observer.WatchFile (loadFileContents, loadFilesContents, loadFileModifications) where
+module Observer.WatchFile (loadFileContents, loadFilesContents, loadFileModifications, applyOperation) where
 
 -- Standard modules
 import qualified Data.Text as T
@@ -11,6 +11,7 @@ import qualified System.IO (stderr)
 -- Supporting modules
 -- https://github.com/timjb/haskell-operational-transformation
 import qualified Control.OperationalTransformation.Text as OT
+import qualified Control.OperationalTransformation.Server as OT
 
 -- Application modules
 import Message
@@ -47,10 +48,11 @@ loadFileModifications messages fileStore path =
           Nothing -> enqueue $ ServerLoadFileContents path newContents
           Just cacheEntry ->
             let oldContents = FileStore.cacheEntryContents cacheEntry
-                operations = generateOps oldContents newContents 
+                actions = generateActions oldContents newContents
+                revision = FileStore.revision $ FileStore.cacheEntryInfo cacheEntry 
             in
-              if length operations > 0 && (case operations of [OT.Retain _] -> False ; _ -> True) 
-                then apply cacheEntry operations
+              if length actions > 0 && (case actions of [OT.Retain _] -> False ; _ -> True) 
+                then apply messages fileStore path cacheEntry revision actions
                 else (T.putStrLn $ T.pack "No changes detected in the contents of the modified file, '" `T.append` (T.pack path) `T.append` (T.pack "'.")))
   >> (return ())
   where
@@ -66,8 +68,8 @@ loadFileModifications messages fileStore path =
     
     -- TODO: Is cons the correct order here? (shouldn't be snoc?)
         
-    generateOps :: T.Text -> T.Text -> [OT.Action]
-    generateOps os ns =
+    generateActions :: T.Text -> T.Text -> [OT.Action]
+    generateActions os ns =
       if T.null ns
         then [OT.Delete $ T.length os]
         else if T.null os
@@ -92,19 +94,32 @@ loadFileModifications messages fileStore path =
       Nothing -> (0, t0, t1)
       Just (prefix, r0, r1) -> (T.length prefix, r0, r1)  
       
-    -- Apply OT operations to the file store's cache
-    apply :: FileStore.FileCacheEntry -> [OT.Action] -> IO ()
-    apply cacheEntry actions = 
-      let
-        rev = FileStore.revision $ FileStore.cacheEntryInfo cacheEntry 
-        otResult = FileStore.applyOperationalTransform cacheEntry (rev, actions)
-      in case otResult of
-        Left errorMessage -> T.hPutStrLn System.IO.stderr $ T.pack "Operational transform failed: " `T.append` (T.pack $ show errorMessage)
-        Right (actions', cacheEntry') ->
-          -- Store updated state in the file store
-          (FileStore.loadCacheIO fileStore path (FileStore.cacheEntryInfo cacheEntry') (FileStore.cacheEntryContents cacheEntry'))
-          -- Add the operational transform to the message queue (to be broadcast to the clients)
-          >> (enqueue $ ServerOperationalTransform path rev actions')
+-- Apply operational transform to a file
+applyOperation :: STM.ServerMessages -> FileStore -> FilePath -> OT.Revision -> [OT.Action] -> IO ()
+applyOperation messages fileStore path revision actions = do
+  maybeFileEntry <- FileStore.readFileStoreEntryIO fileStore path
+  case maybeFileEntry of
+    Nothing -> return () -- TODO: Error? False?
+    Just fileEntry -> do
+      maybeCacheEntry <- FileStore.fileEntryCacheIO fileEntry
+      case maybeCacheEntry of
+        Nothing -> return () -- TODO: Error? False?
+        Just cacheEntry -> apply messages fileStore path cacheEntry revision actions
+      
+-- Apply OT actions to the file store's cache
+apply :: STM.ServerMessages -> FileStore -> FilePath -> FileStore.FileCacheEntry -> OT.Revision -> [OT.Action] -> IO ()
+apply messages fileStore path cacheEntry revision actions = 
+  (T.putStrLn $ T.pack "Apply " `T.append` (T.pack $ show $ FileStore.cacheEntryInfo cacheEntry) `T.append` (T.pack $ show revision) `T.append` (T.pack $ show actions))  
+  >> let otResult = FileStore.applyOperationalTransform cacheEntry (revision, actions)
+  in case otResult of
+    Left errorMessage -> T.hPutStrLn System.IO.stderr $ T.pack "Operational transform failed: " `T.append` (T.pack $ show errorMessage)
+    Right (actions', cacheEntry') ->
+      -- Store updated state in the file store
+      (FileStore.loadCacheIO fileStore path (FileStore.cacheEntryInfo cacheEntry') (FileStore.cacheEntryContents cacheEntry'))
+      -- Add the operational transform to the message queue (to be broadcast to the clients)
+      >> (enqueue $ ServerOperationalTransform path revision actions')
+  where
+    enqueue = STM.Messages.enqueueServerMessage messages
  
 
 load :: FilePath -> FilePath -> IO T.Text
