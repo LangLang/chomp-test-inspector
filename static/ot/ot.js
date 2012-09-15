@@ -740,6 +740,7 @@ if (typeof module === 'object') {
         } else if (op.delete) {
           var from = cm.posFromIndex(index);
           var to   = cm.posFromIndex(index + op.delete);
+          // Check if the deleted characters match CodeMirror's content
           cm.replaceRange('', from, to);
         }
       }
