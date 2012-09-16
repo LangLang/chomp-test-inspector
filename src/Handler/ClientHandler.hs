@@ -20,10 +20,9 @@ handler fs sm c message = case message of
   -- Apply operational transform sent by the client
   OperationalTransform file rev actions ->
     -- Apply changes to the file store
-    --Observer.WatchFile.applyOperation sm fs file rev actions
+    Observer.WatchFile.applyOperation sm fs file rev actions
     -- Broadcast operations to clients
     -- (STM.Clients.broadcastMessage c $ OperationalTransform file rev actions)
-    return ()
   
   -- Unknown message
   _ -> System.IO.hPutStrLn System.IO.stderr $ "Unhandled client message: " ++ show message

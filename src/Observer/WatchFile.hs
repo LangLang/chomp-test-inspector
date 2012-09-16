@@ -109,13 +109,13 @@ applyOperation messages fileStore path revision actions = do
 -- Apply OT actions to the file store's cache
 apply :: STM.ServerMessages -> FileStore -> FilePath -> FileStore.FileCacheEntry -> OT.Revision -> [OT.Action] -> IO ()
 apply messages fileStore path cacheEntry revision actions = 
-  (T.putStrLn $ T.pack "Apply " `T.append` (T.pack $ show $ FileStore.cacheEntryInfo cacheEntry) `T.append` (T.pack $ show revision) `T.append` (T.pack $ show actions))  
+  (T.putStrLn $ T.pack "Apply " `T.append` (T.pack $ show $ FileStore.cacheEntryInfo cacheEntry) `T.snoc` ' ' `T.append` (T.pack $ show revision) `T.snoc` ' ' `T.append` (T.pack $ show actions))
   >> let otResult = FileStore.applyOperationalTransform cacheEntry (revision, actions)
   in case otResult of
     Left errorMessage -> T.hPutStrLn System.IO.stderr $ T.pack "Operational transform failed: " `T.append` (T.pack $ show errorMessage)
     Right (actions', cacheEntry') ->
       -- Store updated state in the file store
-      (FileStore.loadCacheIO fileStore path (FileStore.cacheEntryInfo cacheEntry') (FileStore.cacheEntryContents cacheEntry'))
+      >> (FileStore.loadCacheIO fileStore path (FileStore.cacheEntryInfo cacheEntry') (FileStore.cacheEntryContents cacheEntry'))
       -- Add the operational transform to the message queue (to be broadcast to the clients)
       >> (enqueue $ ServerOperationalTransform path revision actions')
   where
