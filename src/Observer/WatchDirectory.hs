@@ -12,7 +12,7 @@ import System.IO (stderr)
 import System.IO.Error (ioeGetErrorType, IOErrorType)
 import Control.Exception (try)
 import System.INotify (INotify, EventVariety(..), Event(..), initINotify, killINotify, addWatch)
-import System.Directory (getDirectoryContents) 
+import System.Directory (getDirectoryContents)
 #ifdef __GLASGOW_HASKELL__
 import qualified GHC.IO.Exception as Exception
 #endif

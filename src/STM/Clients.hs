@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-module STM.Clients (Clients, newIO, broadcastMessage) where
+module STM.Clients (Client(..), Clients, showClientSummaryIO, newIO, broadcastMessage) where
 
 -- Standard modules
 import Prelude hiding (putStrLn)
-import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM (atomically, TVar, readTVarIO)
 import Data.STM.TList (TList)
 import qualified Data.STM.TList as TList
-import Data.Text (Text, pack, append)
+import Data.Text (Text, pack, append, snoc)
 import Data.Text.IO (putStrLn)
 --import Data.IntMap (IntMap)
 --import qualified Data.IntMap as IntMap
@@ -16,8 +16,25 @@ import Control.Monad.Trans (liftIO)
 -- Application modules
 import Message
 
-type Client p = (Text, WS.Sink p)
+data Client p = Client {
+    clientHost :: Text, 
+    clientName :: TVar Text, 
+    clientSink :: WS.Sink p
+  }
 type Clients p = TList (Client p)
+
+-- Atomically read the client name 
+clientNameIO :: Client p -> IO Text
+clientNameIO = readTVarIO . clientName
+
+-- Serialize a summary of the client information for log messages
+showClientSummaryIO :: Client p -> IO Text
+showClientSummaryIO client = do
+  name <- clientNameIO client 
+  return $ name 
+    `append` (pack " (") 
+    `append` (clientHost client)
+    `snoc` ')'
 
 -- Create a new empty list of clients as a single IO operation
 newIO :: WS.Protocol p => IO (Clients p)
@@ -32,20 +49,26 @@ broadcastMessage clients message = do
 -- Send a message to a single client
 sendMessage :: WS.TextProtocol p => Client p -> Message -> IO ()
 sendMessage client message = do
-  putStrLn $ "Send message to client " `append` fst client `append` "...\n..." `append` showSummary message  
-  send client $ serialize message
+  name <- clientNameIO $ client
+  (putStrLn $ "Send message to client " 
+    `append` name  
+    `append` " (" 
+    `append` (clientHost client)
+    `append` "...\n..."
+    `append` showSummary message)  
+  >> (send client $ serialize message)
 
 broadcast :: WS.TextProtocol p => Clients p -> Text -> IO ()
 broadcast clients datum = do
   --forM_ clients $ \(_, sink) -> WS.sendSink sink $ WS.textData message
-  (atomically $ TList.toList clients) >>= (mapM_ $ (flip WS.sendSink $ WS.textData datum) . snd)
+  (atomically $ TList.toList clients) >>= (mapM_ $ (flip WS.sendSink $ WS.textData datum) . clientSink)
   --(atomically $ TList.toList clients) >>= (mapM_ $ putStrLn . fst)
   return ()
 
 send :: WS.TextProtocol p => Client p -> Text -> IO ()
 send client datum = do
   liftIO $ putStrLn datum
-  WS.sendSink (snd client) $ WS.textData datum
+  WS.sendSink (clientSink client) $ WS.textData datum
   return ()
 
 serialize :: Message -> Text

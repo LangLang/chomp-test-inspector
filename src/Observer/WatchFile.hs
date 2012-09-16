@@ -115,7 +115,7 @@ apply messages fileStore path cacheEntry revision actions =
     Left errorMessage -> T.hPutStrLn System.IO.stderr $ T.pack "Operational transform failed: " `T.append` (T.pack $ show errorMessage)
     Right (actions', cacheEntry') ->
       -- Store updated state in the file store
-      >> (FileStore.loadCacheIO fileStore path (FileStore.cacheEntryInfo cacheEntry') (FileStore.cacheEntryContents cacheEntry'))
+      (FileStore.loadCacheIO fileStore path (FileStore.cacheEntryInfo cacheEntry') (FileStore.cacheEntryContents cacheEntry'))
       -- Add the operational transform to the message queue (to be broadcast to the clients)
       >> (enqueue $ ServerOperationalTransform path revision actions')
   where

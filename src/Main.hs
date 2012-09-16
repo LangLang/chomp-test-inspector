@@ -2,8 +2,6 @@ module Main (main) where
 
 -- Standard modules
 import qualified Network.Wai.Handler.Warp as Warp
-import Network.Wai.Handler.WebSockets (interceptWith)
-import Network.WebSockets(defaultWebSocketsOptions)
 import Control.Concurrent (forkIO, yield)
 import Control.Concurrent.STM (TVar, atomically, newTVarIO, readTVarIO, writeTVar)
 import qualified System.Environment
@@ -42,7 +40,14 @@ main = do
   serverMessages <- STM.Messages.newIO :: IO STM.ServerMessages
   clientMessages <- STM.Messages.newIO :: IO STM.Messages
   serverStateT <- newTVarIO Active :: IO (TVar ServerState)
-    
+  let appState = WebsocketAppState {
+      appClients = clients,
+      appFileStore = fileStore,
+      appServerMessages = serverMessages,
+      appClientMessages = clientMessages,
+      appServerState = serverStateT
+    }
+  
   -- Run asynchronous observer: Watch directory
   maybeWatchDirectoryHandle <- Observer.WatchDirectory.forkObserver fileStore serverMessages
   watchDirectoryHandle <- case maybeWatchDirectoryHandle of
@@ -61,7 +66,7 @@ main = do
   _ <- forkIO $ loopDispatch serverStateT clients fileStore serverMessages clientMessages maybeAbsExecPath
   
   -- Run the front controllers
-  Warp.runSettings (webAppSettings serverStateT clients fileStore serverMessages clientMessages) webApp
+  Warp.runSettings (webAppSettings appState) webApp
   
   -- Stop the asynchronous observers
   case maybeWatchExecutableHandle of
@@ -107,8 +112,8 @@ foreverUntilIO loop check = do
 
 -- Set up the web application (front controller) with the websocket application (front controller)
 -- and shared resources (the file store and incoming message queues)
-webAppSettings :: TVar ServerState -> Clients -> FileStore -> STM.ServerMessages -> STM.Messages -> Warp.Settings
-webAppSettings serverStateT clients fileStore serverMessages clientMessages = Warp.defaultSettings
+webAppSettings :: WebsocketAppState -> Warp.Settings
+webAppSettings appState = Warp.defaultSettings
   { Warp.settingsPort = 8080
-  , Warp.settingsIntercept = interceptWith defaultWebSocketsOptions $ websocketApp serverStateT clients fileStore serverMessages clientMessages
+  , Warp.settingsIntercept = websocketIntercept appState 
   }

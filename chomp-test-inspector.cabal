@@ -58,6 +58,7 @@ executable chomp-test-inspector
                   blaze-html -any,
                   bytestring -any,
                   case-insensitive -any,
+                  conduit -any,
                   containers -any,
                   Diff -any,
                   directory -any,
