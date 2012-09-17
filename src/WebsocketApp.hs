@@ -98,7 +98,7 @@ websocketApp appState waiReq wsReq = do
 
 sendMessage :: TextProtocol p => Message -> WebSockets p () 
 sendMessage message = do
-  liftIO $ putStrLn $ "...send " `append` (pack $ show message)
+  liftIO $ putStrLn $ "\t...send " `append` (pack $ show message)
   sendTextData . pack $ show message
 
 listen :: Client -> TVar ServerState -> Clients -> FileStore -> STM.Messages -> WS.WebSockets Hybi10 ()

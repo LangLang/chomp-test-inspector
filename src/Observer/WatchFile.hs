@@ -125,5 +125,5 @@ apply messages fileStore path cacheEntry revision actions =
 load :: FilePath -> FilePath -> IO T.Text
 load relPath path = do
   contents <- T.readFile relPath
-  T.putStrLn (T.pack "...File loaded " `T.append` T.pack path)
+  T.putStrLn (T.pack "\t...File loaded " `T.append` T.pack path)
   return contents

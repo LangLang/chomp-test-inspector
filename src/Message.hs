@@ -29,7 +29,7 @@ data Message = Acknowledge
              | OperationalTransform FilePath OT.Revision [OT.Action]
              | ParseError String
   deriving (Show, Read)
-
+  
 -- TODO
 --type TimeStampedMessage = (UTCTime, Message)
 
