@@ -16,7 +16,7 @@ import Control.Monad (zipWithM_)
 import Control.Monad.Trans (liftIO)
 import Control.Exception (SomeException)
 --import Control.Concurrent (MVar, newMVar, modifyMVar_, readMVar)
-import Control.Concurrent.STM (atomically, TVar, readTVarIO, newTVarIO)
+import Control.Concurrent.STM (atomically, TVar, readTVarIO, newTVarIO, readTVar, writeTVar)
 import Control.Concurrent.STM.TChan (writeTChan)
 import qualified Data.STM.TList as TList
 import Safe (readMay)
@@ -36,8 +36,16 @@ data WebsocketAppState = WebsocketAppState {
     appClients :: Clients, 
     appFileStore :: FileStore,
     appServerMessages :: STM.ServerMessages,
-    appClientMessages :: STM.Messages
+    appClientMessages :: STM.Messages,
+    appClientIdCounter :: TVar Integer
   }
+  
+-- Increment the client id counter and return the previous value
+generateClientId :: TVar Integer -> IO Integer
+generateClientId counter = atomically $ do
+  c <- (readTVar counter)
+  writeTVar counter (c + 1)
+  return c
 
 -- This function is similar to interceptWith, but passes along additional information
 -- (the client IP address) for logging purposes
@@ -59,15 +67,17 @@ websocketApp appState waiReq wsReq = do
   files <- liftIO $ FileStore.allFilesIO (appFileStore appState)
   maybeCacheEntries <- liftIO $ mapM (FileStore.readFileCacheEntryIO $ appFileStore appState) files
   _ <- sendMessage $ ReloadFiles Connected files
-  _ <- zipWithM_ sendLoadFileContents files maybeCacheEntries 
+  _ <- zipWithM_ sendLoadFileContents files maybeCacheEntries
   
   -- Obtain a sink to use for sending data in another thread
   newClientSink <- WS.getSink
   client <- liftIO $ do
-    newClientName <- newTVarIO $ pack "Unnamed" 
+    newClientName <- newTVarIO $ pack "Unnamed"
+    newClientId <- generateClientId $ appClientIdCounter appState
     let c = STM.Client {
+        STM.clientId = newClientId,
         STM.clientHost = showRemoteHost, 
-        STM.clientName = newClientName, 
+        STM.clientName = newClientName,
         STM.clientSink = newClientSink
       }
     (atomically $ TList.append (appClients appState) c) >> return c 

@@ -40,12 +40,14 @@ main = do
   serverMessages <- STM.Messages.newIO :: IO STM.ServerMessages
   clientMessages <- STM.Messages.newIO :: IO STM.Messages
   serverStateT <- newTVarIO Active :: IO (TVar ServerState)
+  clientIdCounterT <- newTVarIO 1
   let appState = WebsocketAppState {
       appClients = clients,
       appFileStore = fileStore,
       appServerMessages = serverMessages,
       appClientMessages = clientMessages,
-      appServerState = serverStateT
+      appServerState = serverStateT,
+      appClientIdCounter = clientIdCounterT
     }
   
   -- Run asynchronous observer: Watch directory

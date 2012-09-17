@@ -17,6 +17,7 @@ import Control.Monad.Trans (liftIO)
 import Message
 
 data Client p = Client {
+    clientId :: Integer,
     clientHost :: Text, 
     clientName :: TVar Text, 
     clientSink :: WS.Sink p
