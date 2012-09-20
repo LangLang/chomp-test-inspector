@@ -15,7 +15,7 @@ import qualified FileStore
 import FileStore (FileStore)
 import qualified Observer.WatchDirectory
 import qualified Observer.WatchExecutable
-import qualified STM.Messages as STM (Messages, ServerMessages)
+import qualified STM.Messages as STM (NetworkMessages, ServerMessages)
 import qualified STM.Messages
 import qualified STM.Clients
 import ServerState
@@ -38,7 +38,7 @@ main = do
   clients <- STM.Clients.newIO
   fileStore <- FileStore.newIO watchPath
   serverMessages <- STM.Messages.newIO :: IO STM.ServerMessages
-  clientMessages <- STM.Messages.newIO :: IO STM.Messages
+  clientMessages <- STM.Messages.newIO :: IO STM.NetworkMessages
   serverStateT <- newTVarIO Active :: IO (TVar ServerState)
   clientIdCounterT <- newTVarIO 1
   let appState = WebsocketAppState {
@@ -84,7 +84,7 @@ main = do
     printUsage = putStrLn "USAGE: chomp-test-inspector [watchPath] [executablePath]"
 
 -- Loop the dispatch method until the termination flag is true and the message queues are both empty
-loopDispatch :: TVar ServerState -> Clients -> FileStore -> STM.ServerMessages -> STM.Messages -> Maybe FilePath -> IO ()
+loopDispatch :: TVar ServerState -> Clients -> FileStore -> STM.ServerMessages -> STM.NetworkMessages -> Maybe FilePath -> IO ()
 loopDispatch serverStateT clients fileStore serverMessages clientMessages maybeExecPath = loop
   where
     loop = do

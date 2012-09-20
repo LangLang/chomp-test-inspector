@@ -83,7 +83,7 @@ inotifyEvent messages event = do
     
     _ -> return ()
   where
-    enqueue = STM.Messages.enqueueServerMessage messages <=< stampServerMessage
+    enqueue = STM.Messages.enqueue messages <=< stampServerMessage
      -- TODO: prevent this message from being repeatedly enqueued
      --       there should be something like an "enqueueOnce" function that prevents duplicates
     executeAll = enqueue ServerExecuteAll
@@ -157,5 +157,5 @@ readProcessStreams serverMessages hProcess outputPath hStdOut hStdErr = do
   logMessage $ LogEnd exitCode
   where
     logMessage :: ProcessLog -> IO ()
-    logMessage msg = (STM.Messages.enqueueServerMessage serverMessages <=< stampServerMessage) $ ServerNotify $ ProcessMessage outputPath msg 
+    logMessage msg = (STM.Messages.enqueue serverMessages <=< stampServerMessage) $ ServerNotify $ ProcessMessage outputPath msg 
   

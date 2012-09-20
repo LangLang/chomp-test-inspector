@@ -51,7 +51,7 @@ forkObserver fileStore messages = do
       >> (liftM Just $ runINotify rootPath)
   where
     -- Enqueue a server message
-    enqueue = STM.Messages.enqueueServerMessage messages <=< stampServerMessage
+    enqueue = STM.Messages.enqueue messages <=< stampServerMessage
     
     -- Run inotify on the watch directory
     runINotify :: FilePath -> IO WatchDirectoryHandle
@@ -153,7 +153,7 @@ inotifyEvent rootPath messages event = do
     _ -> return ()
 
   where
-    enqueue = STM.Messages.enqueueServerMessage messages <=< stampServerMessage
+    enqueue = STM.Messages.enqueue messages <=< stampServerMessage
     unloadFiles e = enqueue $ ServerReloadFiles e []
     movedWatchPath = do
       errorOrFiles <- try $ listAllFiles rootPath :: IO (Either IOError [FilePath])

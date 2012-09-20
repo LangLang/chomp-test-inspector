@@ -9,16 +9,16 @@ import Control.Concurrent.STM (TVar, atomically, tryReadTChan, readTVar, writeTV
 import Message
 import WebsocketApp (Clients)
 import FileStore (FileStore)
-import qualified STM.Messages as STM (Messages, ServerMessages)
+import qualified STM.Messages as STM (NetworkMessages, ServerMessages)
 import ServerState
 import qualified Handler.ServerHandler
 import qualified Handler.ClientHandler
 
-data DispatchMessage = ServerMessage StampedServerMessage | Message Message | Empty
+data DispatchMessage = ServerMessage StampedServerMessage | ClientMessage StampedNetworkMessage | Empty
 
 -- Dispatches messages from either a client or the server itself to the relevant message handler
 -- Returns false if no messages are available to be processed
-dispatch :: TVar ServerState -> Clients -> FileStore -> STM.ServerMessages -> STM.Messages -> Maybe FilePath -> IO Bool
+dispatch :: TVar ServerState -> Clients -> FileStore -> STM.ServerMessages -> STM.NetworkMessages -> Maybe FilePath -> IO Bool
 dispatch serverStateT clients fileStore serverMessages clientMessages maybeExecPath = do
   -- If there are any messages in the server queue, process them first
   dispatchMessage <- atomically $ do
@@ -29,7 +29,7 @@ dispatch serverStateT clients fileStore serverMessages clientMessages maybeExecP
         -- If there are messages in the client queue, process them next
         clientMessage <- tryReadTChan clientMessages
         case clientMessage of
-          Just cm -> return $ Message cm
+          Just cm -> return $ ClientMessage cm
           Nothing -> do
             serverState <- readTVar serverStateT
             if serverState == Terminating
@@ -38,13 +38,13 @@ dispatch serverStateT clients fileStore serverMessages clientMessages maybeExecP
   -- Process the message, dispatching it to the relevant handler
   case dispatchMessage of
     ServerMessage message -> (processServerMessage fileStore serverMessages clients maybeExecPath message) >> return True
-    Message message -> (processClientMessage fileStore serverMessages clients message) >> return True
+    ClientMessage message -> (processClientMessage fileStore serverMessages clients message) >> return True
     Empty -> return False
 
 processServerMessage :: FileStore -> STM.ServerMessages -> Clients -> Maybe FilePath -> StampedServerMessage -> IO ()
 processServerMessage fileStore serverMessages clients maybeExecPath message =
   Handler.ServerHandler.handler fileStore serverMessages clients maybeExecPath message
 
-processClientMessage :: FileStore -> STM.ServerMessages -> Clients -> Message -> IO ()
+processClientMessage :: FileStore -> STM.ServerMessages -> Clients -> StampedNetworkMessage -> IO ()
 processClientMessage fileStore serverMessages clients message =
   Handler.ClientHandler.handler fileStore serverMessages clients message

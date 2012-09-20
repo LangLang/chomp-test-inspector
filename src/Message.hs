@@ -1,8 +1,9 @@
 module Message (
-  Message(..), 
+  NetworkMessage(..), 
   ServerMessage(..),
   StampedMessage(..),
   StampedServerMessage, 
+  StampedNetworkMessage,
   Notification(..), 
   ProcessLog(..), 
   StorageEvent(..), 
@@ -29,15 +30,15 @@ import FileStore
 import Client (HostId, serverId)
 
 -- Messages sent between clients and the server (and possibly between clients as well)
-data Message = Acknowledge
-             | Notify Notification
-             | ReloadFiles StorageEvent [FilePath]
-             | LoadFile StorageEvent FilePath
-             | UnloadFile StorageEvent FilePath
-             | LoadFileContents FilePath OT.Revision FileContents
-             | UnloadFileContents FilePath
-             | OperationalTransform FilePath OT.Revision [OT.Action]
-             | ParseError String
+data NetworkMessage = Acknowledge
+                    | Notify Notification
+                    | ReloadFiles StorageEvent [FilePath]
+                    | LoadFile StorageEvent FilePath
+                    | UnloadFile StorageEvent FilePath
+                    | LoadFileContents FilePath OT.Revision FileContents
+                    | UnloadFileContents FilePath
+                    | OperationalTransform FilePath OT.Revision [OT.Action]
+                    | ParseError String
   deriving (Show, Read)
   
 -- Server generated messages (to be processed locally)
@@ -56,7 +57,7 @@ data StampedMessage m = StampedMessage HostId UTCTime m
   deriving (Show, Read)
 
 type StampedServerMessage = StampedMessage ServerMessage
---type StampedNetworkMessage = StampedMessage NetworkMessage
+type StampedNetworkMessage = StampedMessage NetworkMessage
   
 -- Notifications can be attached to certain messages
 data Notification = Info String
@@ -109,7 +110,7 @@ stampClientMessage cid m = do
   return $ StampedMessage cid t m
   
 -- Serialize a message summary (similar to `show`, but used for logging)
-showStampedSummary :: StampedMessage Message -> Text
+showStampedSummary :: StampedNetworkMessage -> Text
 showStampedSummary (StampedMessage cid time message) =
   (if cid == 0 then T.pack "Server" else T.pack "Client #" `T.append` T.pack (show cid))
   `T.append` T.pack " ("
@@ -118,7 +119,7 @@ showStampedSummary (StampedMessage cid time message) =
   `T.append` T.pack "): "
   `T.append` (showSummary message)
 
-showSummary :: Message -> Text
+showSummary :: NetworkMessage -> Text
 showSummary (LoadFileContents f rev fc) = 
   T.pack "LoadFileContents "
   `T.append` (T.pack $ show f)

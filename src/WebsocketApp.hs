@@ -12,13 +12,11 @@ import Data.Text (Text, pack, unpack, append, snoc)
 import Data.Text.IO (putStrLn)
 import qualified Data.Conduit as Conduit
 import Data.ByteString (ByteString)
-import Data.Time (getCurrentTime)
 import Control.Monad (zipWithM_, (<=<))
 import Control.Monad.Trans (liftIO)
 import Control.Exception (SomeException)
 --import Control.Concurrent (MVar, newMVar, modifyMVar_, readMVar)
 import Control.Concurrent.STM (atomically, TVar, readTVarIO, newTVarIO, readTVar, writeTVar)
-import Control.Concurrent.STM.TChan (writeTChan)
 import qualified Data.STM.TList as TList
 import Safe (readMay)
 
@@ -26,9 +24,10 @@ import Safe (readMay)
 import qualified FileStore
 import FileStore (FileStore)
 import qualified STM.Clients as STM
-import Client (HostId, serverId)
+import Client (HostId, clientId)
 import Message
-import qualified STM.Messages as STM (ServerMessages, Messages)
+import qualified STM.Messages as STM (ServerMessages, NetworkMessages)
+import qualified STM.Messages
 import ServerState
 
 type Client = STM.Client Hybi10
@@ -37,8 +36,8 @@ data WebsocketAppState = WebsocketAppState {
     appServerState :: TVar ServerState,
     appClients :: Clients, 
     appFileStore :: FileStore,
-    appServerMessages :: STM.ServerMessages,
-    appClientMessages :: STM.Messages,
+    appServerMessages :: STM.ServerMessages,  -- generated messages
+    appClientMessages :: STM.NetworkMessages, -- received messages
     appClientIdCounter :: TVar HostId
   }
   
@@ -108,12 +107,12 @@ websocketApp appState waiReq wsReq = do
           (FileStore.revision (FileStore.cacheEntryInfo cacheEntry))
           (FileStore.cacheEntryContents cacheEntry)
 
-sendMessage :: TextProtocol p => Message -> WebSockets p () 
+sendMessage :: TextProtocol p => NetworkMessage -> WebSockets p () 
 sendMessage message = do
   liftIO $ putStrLn $ "\t...send " `append` (pack $ show message)
   sendTextData . pack $ show message
 
-listen :: Client -> TVar ServerState -> Clients -> FileStore -> STM.Messages -> WS.WebSockets Hybi10 ()
+listen :: Client -> TVar ServerState -> Clients -> FileStore -> STM.NetworkMessages -> WS.WebSockets Hybi10 ()
 listen client serverStateT clients fileStore messages = do
   clientConnected <- (flip WS.catchWsError catchDisconnect) receiveMessage
   if not clientConnected
@@ -130,9 +129,9 @@ listen client serverStateT clients fileStore messages = do
       liftIO $ do
         clientSummary <- STM.showClientSummaryIO client  
         putStrLn $ "Message received from client " `append` clientSummary `append` "..."
-      case readMay $ unpack messageString :: Maybe Message of
-        Just message -> do
-          liftIO $ atomically $ writeTChan messages $ message
+      case readMay $ unpack messageString :: Maybe NetworkMessage of
+        Just message ->
+          liftIO $ (STM.Messages.enqueue messages <=< stampClientMessage (clientId client)) message
           --sendMessage Acknowledge
         Nothing -> do
           liftIO $ putStrLn "\t...(error) could not parse recieved message"

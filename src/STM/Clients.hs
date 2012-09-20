@@ -37,13 +37,13 @@ newIO :: WS.Protocol p => IO (Clients p)
 newIO = TList.emptyIO
 
 -- Broadcast a message to all the clients in the list
-broadcastMessage :: WS.TextProtocol p => Clients p -> StampedMessage Message -> IO ()
+broadcastMessage :: WS.TextProtocol p => Clients p -> StampedNetworkMessage -> IO ()
 broadcastMessage clients message = do
   putStrLn $ "Broadcast message...\n\t..." `append` showStampedSummary message
   broadcast clients $ serialize message
 
 -- Send a message to a single client
-sendMessage :: WS.TextProtocol p => Client p -> Message -> IO ()
+sendMessage :: WS.TextProtocol p => Client p -> NetworkMessage -> IO ()
 sendMessage client message = do
   name <- clientNameIO $ client
   (putStrLn $ "Send message to client " 

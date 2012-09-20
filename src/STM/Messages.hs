@@ -1,4 +1,4 @@
-module STM.Messages (Messages, ServerMessages, newIO, enqueueMessage, enqueueServerMessage) where
+module STM.Messages (NetworkMessages, ServerMessages, newIO, enqueue) where
 
 -- Standard modules
 import Control.Concurrent.STM (atomically)
@@ -8,7 +8,7 @@ import Control.Concurrent.STM.TChan
 -- Application modules
 import Message
 
-type Messages = TChan Message
+type NetworkMessages = TChan StampedNetworkMessage
 type ServerMessages = TChan StampedServerMessage
 
 -- Create a new message queue
@@ -16,11 +16,8 @@ newIO :: IO (TChan a)
 newIO = newTChanIO
 
 -- Add a message to the queue as a single atomic transaction
-enqueueMessage :: Messages -> Message -> IO ()
-enqueueMessage m = atomically . (writeTChan m)
-
-enqueueServerMessage :: ServerMessages -> StampedServerMessage -> IO ()
-enqueueServerMessage m = atomically . (writeTChan m)
+enqueue :: TChan m -> m -> IO ()
+enqueue m = atomically . (writeTChan m)
 
 {-- Clear all the messages from the queue without processing them using multiple atomic operations 
 clearMessages :: Messages -> IO ()
