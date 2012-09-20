@@ -9,7 +9,7 @@ import Control.Concurrent.STM.TChan
 import Message
 
 type Messages = TChan Message
-type ServerMessages = TChan ServerMessage
+type ServerMessages = TChan StampedServerMessage
 
 -- Create a new message queue
 newIO :: IO (TChan a)
@@ -19,7 +19,7 @@ newIO = newTChanIO
 enqueueMessage :: Messages -> Message -> IO ()
 enqueueMessage m = atomically . (writeTChan m)
 
-enqueueServerMessage :: ServerMessages -> ServerMessage -> IO ()
+enqueueServerMessage :: ServerMessages -> StampedServerMessage -> IO ()
 enqueueServerMessage m = atomically . (writeTChan m)
 
 {-- Clear all the messages from the queue without processing them using multiple atomic operations 

@@ -48,6 +48,7 @@ executable chomp-test-inspector
                  Observer.WatchDirectory Observer.WatchFile
                  Observer.WatchExecutable MessageDispatch ServerState
                  STM.Clients Handler.ServerHandler Handler.ClientHandler
+                 Client
   ghc-prof-options:
   ghc-shared-options:
   hugs-options:
@@ -78,6 +79,7 @@ executable chomp-test-inspector
                   stm -any,
                   stm-tlist -any,
                   text -any,
+                  time -any,
                   wai -any,
                   wai-app-static -any,
                   wai-websockets -any,

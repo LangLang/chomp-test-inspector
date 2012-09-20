@@ -14,7 +14,7 @@ import ServerState
 import qualified Handler.ServerHandler
 import qualified Handler.ClientHandler
 
-data DispatchMessage = ServerMessage ServerMessage | Message Message | Empty
+data DispatchMessage = ServerMessage StampedServerMessage | Message Message | Empty
 
 -- Dispatches messages from either a client or the server itself to the relevant message handler
 -- Returns false if no messages are available to be processed
@@ -41,7 +41,7 @@ dispatch serverStateT clients fileStore serverMessages clientMessages maybeExecP
     Message message -> (processClientMessage fileStore serverMessages clients message) >> return True
     Empty -> return False
 
-processServerMessage :: FileStore -> STM.ServerMessages -> Clients -> Maybe FilePath -> ServerMessage -> IO ()
+processServerMessage :: FileStore -> STM.ServerMessages -> Clients -> Maybe FilePath -> StampedServerMessage -> IO ()
 processServerMessage fileStore serverMessages clients maybeExecPath message =
   Handler.ServerHandler.handler fileStore serverMessages clients maybeExecPath message
 

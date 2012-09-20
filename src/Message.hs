@@ -1,13 +1,22 @@
-module Message (Message(..), ServerMessage(..), Notification(..), ProcessLog(..), StorageEvent(..), Patch(..), showSummary) where
-
-{- 
-  TODO: Possibly split Message into ServerMessage and ClientMessage or perhaps StorageMessage and
-        EditorMessage. 
--}
+module Message (
+  Message(..), 
+  ServerMessage(..),
+  StampedMessage(..),
+  StampedServerMessage, 
+  Notification(..), 
+  ProcessLog(..), 
+  StorageEvent(..), 
+  Patch(..),
+  stampServerMessage,
+  stampClientMessage,
+  showSummary,
+  showStampedSummary
+) where
 
 -- Standard modules
 import qualified Data.Text as T
 import Data.Text (Text)
+import Data.Time (UTCTime, getCurrentTime)
 import System.Exit (ExitCode)
 
 -- Supporting modules
@@ -17,6 +26,7 @@ import qualified Control.OperationalTransformation.Server as OT (Revision)
 
 -- Application modules
 import FileStore
+import Client (HostId, serverId)
 
 -- Messages sent between clients and the server (and possibly between clients as well)
 data Message = Acknowledge
@@ -30,9 +40,6 @@ data Message = Acknowledge
              | ParseError String
   deriving (Show, Read)
   
--- TODO
---type TimeStampedMessage = (UTCTime, Message)
-
 -- Server generated messages (to be processed locally)
 data ServerMessage = ServerNotify Notification
                    | ServerReloadFiles StorageEvent [FilePath]
@@ -44,6 +51,13 @@ data ServerMessage = ServerNotify Notification
                    | ServerExecuteAll
   deriving (Show, Read)
 
+-- A message stamped with the origin host identifier and (server) time stamp 
+data StampedMessage m = StampedMessage HostId UTCTime m
+  deriving (Show, Read)
+
+type StampedServerMessage = StampedMessage ServerMessage
+--type StampedNetworkMessage = StampedMessage NetworkMessage
+  
 -- Notifications can be attached to certain messages
 data Notification = Info String
                   | ClientDisconnected String
@@ -83,7 +97,27 @@ data StorageEvent = WatchInstalled
 data Patch = D Text
   deriving (Show, Read)
   
+-- Shorthand method to stamp a message originating from the server
+stampServerMessage :: m -> IO (StampedMessage m)
+stampServerMessage m = do 
+  t <- getCurrentTime
+  return $ StampedMessage serverId t m
+  
+stampClientMessage :: HostId -> m -> IO (StampedMessage m)
+stampClientMessage cid m = do 
+  t <- getCurrentTime
+  return $ StampedMessage cid t m
+  
 -- Serialize a message summary (similar to `show`, but used for logging)
+showStampedSummary :: StampedMessage Message -> Text
+showStampedSummary (StampedMessage cid time message) =
+  (if cid == 0 then T.pack "Server" else T.pack "Client #" `T.append` T.pack (show cid))
+  `T.append` T.pack " ("
+  --`T.append` (T.pack $ formatTime defaultTimeLocale "(%Y/%m/%d %H:%M): " time)
+  `T.append` (T.pack $ show time)
+  `T.append` T.pack "): "
+  `T.append` (showSummary message)
+
 showSummary :: Message -> Text
 showSummary (LoadFileContents f rev fc) = 
   T.pack "LoadFileContents "

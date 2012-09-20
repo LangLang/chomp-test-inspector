@@ -12,7 +12,8 @@ import Data.Text (Text, pack, unpack, append, snoc)
 import Data.Text.IO (putStrLn)
 import qualified Data.Conduit as Conduit
 import Data.ByteString (ByteString)
-import Control.Monad (zipWithM_)
+import Data.Time (getCurrentTime)
+import Control.Monad (zipWithM_, (<=<))
 import Control.Monad.Trans (liftIO)
 import Control.Exception (SomeException)
 --import Control.Concurrent (MVar, newMVar, modifyMVar_, readMVar)
@@ -25,6 +26,7 @@ import Safe (readMay)
 import qualified FileStore
 import FileStore (FileStore)
 import qualified STM.Clients as STM
+import Client (HostId, serverId)
 import Message
 import qualified STM.Messages as STM (ServerMessages, Messages)
 import ServerState
@@ -37,11 +39,11 @@ data WebsocketAppState = WebsocketAppState {
     appFileStore :: FileStore,
     appServerMessages :: STM.ServerMessages,
     appClientMessages :: STM.Messages,
-    appClientIdCounter :: TVar Integer
+    appClientIdCounter :: TVar HostId
   }
   
 -- Increment the client id counter and return the previous value
-generateClientId :: TVar Integer -> IO Integer
+generateClientId :: TVar HostId -> IO HostId
 generateClientId counter = atomically $ do
   c <- (readTVar counter)
   writeTVar counter (c + 1)
@@ -141,6 +143,6 @@ listen client serverStateT clients fileStore messages = do
     catchDisconnect e =
       case fromException e of
         Just WS.ConnectionClosed -> liftIO $ do
-          STM.broadcastMessage clients $ Notify $ ClientDisconnected "TODO: client identifier"
+          (STM.broadcastMessage clients <=< stampServerMessage) $ Notify $ ClientDisconnected "TODO: client identifier"
           return False
         _ -> return False

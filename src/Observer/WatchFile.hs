@@ -4,6 +4,7 @@ module Observer.WatchFile (loadFileContents, loadFilesContents, loadFileModifica
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Control.Concurrent
+import Control.Monad ((<=<))
 import qualified System.FilePath as FilePath
 import qualified Data.Algorithm.Diff as Diff
 import qualified System.IO (stderr)
@@ -28,7 +29,7 @@ loadFileContents messages rootPath path =
     enqueue $ ServerLoadFileContents path contents)
   >> return ()
   where
-    enqueue = STM.Messages.enqueueServerMessage messages
+    enqueue = STM.Messages.enqueueServerMessage messages <=< stampServerMessage
     relPath = rootPath `FilePath.combine` path
 
 loadFilesContents :: STM.ServerMessages -> FilePath -> [FilePath] -> IO ()
@@ -58,7 +59,7 @@ loadFileModifications messages fileStore path =
   where
     rootPath = FileStore.rootPath fileStore
     relPath = rootPath `FilePath.combine` path
-    enqueue = STM.Messages.enqueueServerMessage messages
+    enqueue = STM.Messages.enqueueServerMessage messages <=< stampServerMessage
     
     -- TODO: This is likely to be slow because text is being unpacked
     --       Also, probably using a more expensive diff algorithm than necessary
@@ -119,7 +120,7 @@ apply messages fileStore path cacheEntry revision actions =
       -- Add the operational transform to the message queue (to be broadcast to the clients)
       >> (enqueue $ ServerOperationalTransform path revision actions')
   where
-    enqueue = STM.Messages.enqueueServerMessage messages
+    enqueue = STM.Messages.enqueueServerMessage messages <=< stampServerMessage
  
 
 load :: FilePath -> FilePath -> IO T.Text

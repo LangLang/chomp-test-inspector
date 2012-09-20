@@ -5,7 +5,7 @@ module Observer.WatchExecutable (WatchExecutableHandle, forkObserver, killObserv
 --import Data.Text hiding (map, filter)
 --import Data.Text.IO (putStrLn, hPutStrLn)
 import System.INotify (INotify, EventVariety(..), Event(..), initINotify, killINotify, addWatch)
-import Control.Monad (liftM)
+import Control.Monad (liftM, (<=<))
 import Control.Concurrent as C
 import qualified System.IO
 import qualified System.Process as P
@@ -83,7 +83,7 @@ inotifyEvent messages event = do
     
     _ -> return ()
   where
-    enqueue = STM.Messages.enqueueServerMessage messages
+    enqueue = STM.Messages.enqueueServerMessage messages <=< stampServerMessage
      -- TODO: prevent this message from being repeatedly enqueued
      --       there should be something like an "enqueueOnce" function that prevents duplicates
     executeAll = enqueue ServerExecuteAll
@@ -157,5 +157,5 @@ readProcessStreams serverMessages hProcess outputPath hStdOut hStdErr = do
   logMessage $ LogEnd exitCode
   where
     logMessage :: ProcessLog -> IO ()
-    logMessage msg = STM.Messages.enqueueServerMessage serverMessages $ ServerNotify $ ProcessMessage outputPath msg 
+    logMessage msg = (STM.Messages.enqueueServerMessage serverMessages <=< stampServerMessage) $ ServerNotify $ ProcessMessage outputPath msg 
   

@@ -7,7 +7,7 @@ import Data.Text hiding (map, filter)
 import Data.Text.IO (putStrLn, hPutStrLn)
 import Data.String.Utils (endswith)
 --import Control.Monad.Trans (liftIO)
-import Control.Monad (liftM)
+import Control.Monad (liftM, (<=<))
 import System.IO (stderr)
 import System.IO.Error (ioeGetErrorType, IOErrorType)
 import Control.Exception (try)
@@ -47,11 +47,11 @@ forkObserver fileStore messages = do
     Right files ->
       -- Load all files and return the directory's observer
       -- TODO: is there an inotify event we can watch to enqueue this message instead
-      (enqueue $ ServerReloadFiles WatchInstalled files) 
+      (enqueue $ ServerReloadFiles WatchInstalled files)
       >> (liftM Just $ runINotify rootPath)
   where
     -- Enqueue a server message
-    enqueue = STM.Messages.enqueueServerMessage messages
+    enqueue = STM.Messages.enqueueServerMessage messages <=< stampServerMessage
     
     -- Run inotify on the watch directory
     runINotify :: FilePath -> IO WatchDirectoryHandle
@@ -153,7 +153,7 @@ inotifyEvent rootPath messages event = do
     _ -> return ()
 
   where
-    enqueue = STM.Messages.enqueueServerMessage messages
+    enqueue = STM.Messages.enqueueServerMessage messages <=< stampServerMessage
     unloadFiles e = enqueue $ ServerReloadFiles e []
     movedWatchPath = do
       errorOrFiles <- try $ listAllFiles rootPath :: IO (Either IOError [FilePath])

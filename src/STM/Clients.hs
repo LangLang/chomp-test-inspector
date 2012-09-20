@@ -3,7 +3,7 @@ module STM.Clients (Client(..), Clients, showClientSummaryIO, newIO, broadcastMe
 
 -- Standard modules
 import Prelude hiding (putStrLn)
-import Control.Concurrent.STM (atomically, TVar, readTVarIO)
+import Control.Concurrent.STM (atomically, readTVarIO)
 import Data.STM.TList (TList)
 import qualified Data.STM.TList as TList
 import Data.Text (Text, pack, append, snoc)
@@ -15,13 +15,8 @@ import Control.Monad.Trans (liftIO)
 
 -- Application modules
 import Message
+import Client (Client(..))
 
-data Client p = Client {
-    clientId :: Integer,
-    clientHost :: Text, 
-    clientName :: TVar Text, 
-    clientSink :: WS.Sink p
-  }
 type Clients p = TList (Client p)
 
 -- Atomically read the client name 
@@ -42,9 +37,9 @@ newIO :: WS.Protocol p => IO (Clients p)
 newIO = TList.emptyIO
 
 -- Broadcast a message to all the clients in the list
-broadcastMessage :: WS.TextProtocol p => Clients p -> Message -> IO ()
+broadcastMessage :: WS.TextProtocol p => Clients p -> StampedMessage Message -> IO ()
 broadcastMessage clients message = do
-  putStrLn $ "Broadcast message...\n\t..." `append` showSummary message
+  putStrLn $ "Broadcast message...\n\t..." `append` showStampedSummary message
   broadcast clients $ serialize message
 
 -- Send a message to a single client
@@ -72,5 +67,5 @@ send client datum = do
   WS.sendSink (clientSink client) $ WS.textData datum
   return ()
 
-serialize :: Message -> Text
+serialize :: Show s => s -> Text
 serialize = pack . show
