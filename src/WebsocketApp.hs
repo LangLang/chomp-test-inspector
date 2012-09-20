@@ -67,7 +67,7 @@ websocketApp appState waiReq wsReq = do
   --       If the file store is not active, then send ReloadFiles LostRootDirectory or similar instead
   files <- liftIO $ FileStore.allFilesIO (appFileStore appState)
   maybeCacheEntries <- liftIO $ mapM (FileStore.readFileCacheEntryIO $ appFileStore appState) files
-  _ <- sendMessage $ ReloadFiles Connected files
+  _ <- sendMessage <=< (liftIO . stampServerMessage) $ ReloadFiles Connected files
   _ <- zipWithM_ sendLoadFileContents files maybeCacheEntries
   
   -- Obtain a sink to use for sending data in another thread
@@ -101,13 +101,13 @@ websocketApp appState waiReq wsReq = do
 
     sendLoadFileContents :: FilePath -> Maybe FileStore.FileCacheEntry -> WebSockets Hybi10 ()
     sendLoadFileContents file maybeCacheEntry =
-      sendMessage $ case maybeCacheEntry of
+      sendMessage <=< (liftIO . stampServerMessage) $ case maybeCacheEntry of
         Nothing -> UnloadFileContents file
         Just cacheEntry -> LoadFileContents file 
           (FileStore.revision (FileStore.cacheEntryInfo cacheEntry))
           (FileStore.cacheEntryContents cacheEntry)
 
-sendMessage :: TextProtocol p => NetworkMessage -> WebSockets p () 
+sendMessage :: TextProtocol p => StampedNetworkMessage -> WebSockets p () 
 sendMessage message = do
   liftIO $ putStrLn $ "\t...send " `append` (pack $ show message)
   sendTextData . pack $ show message
@@ -135,7 +135,7 @@ listen client serverStateT clients fileStore messages = do
           --sendMessage Acknowledge
         Nothing -> do
           liftIO $ putStrLn "\t...(error) could not parse recieved message"
-          sendMessage $ ParseError $ take 255 $ unpack messageString
+          sendMessage <=< (liftIO . stampServerMessage) $ ParseError $ take 255 $ unpack messageString
       return True
 
     catchDisconnect :: SomeException -> WebSockets p Bool
