@@ -30,7 +30,7 @@ var supersimple = supersimple || {};
   supersimple.editor = {
     html: function(textContents) {
       var 
-        el = html.evalCons.pre(
+        el = html.pre(
           {class: "supersimple-editor-input", contenteditable: "true"}, 
           typeof textContents === 'string'? textContents : "");
       // Events will not be attached in older versions of IE < 9.

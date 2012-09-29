@@ -30,4 +30,4 @@
       ParseError: function(message) {},
       ConnectionClosed: function() { StatusBar.important("The connection to the server was closed."); }
     });
-  })(html.evalCons);
+  })(html);

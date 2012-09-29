@@ -168,4 +168,4 @@
         disableEditor();
       }
     }));
-  })(adt({ editor: supersimple.editor.html }, html.evalCons));
+  })(adt({ editor: supersimple.editor.html }, html));

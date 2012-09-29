@@ -53,4 +53,4 @@
       otClient.applyClient(otOperations);
       return result;
     };
-  })(html.evalCons);
+  })(html);

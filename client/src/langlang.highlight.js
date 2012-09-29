@@ -22,4 +22,4 @@
         highlightResult.html.push(highlighter(parseResult.ast[i]));
       return highlightResult;
     };
-  })(html.evalCons);
+  })(html);
