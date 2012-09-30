@@ -1,3 +1,8 @@
+{-# LANGUAGE StandaloneDeriving #-}
+-- {-# LANGUAGE TypeSynonymInstances #-}
+--{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+--{-# LANGUAGE FlexibleContexts #-}
+--{-# LANGUAGE UndecidableInstances #-}
 module Message (
   NetworkMessage(..), 
   ServerMessage(..),
@@ -17,8 +22,10 @@ module Message (
 -- Standard modules
 import qualified Data.Text as T
 import Data.Text (Text)
-import Data.Time (UTCTime, getCurrentTime)
+--import Data.Time.Clock (UTCTime(..), getCurrentTime)
+import Data.Time (UTCTime(..), getCurrentTime)
 import System.Exit (ExitCode)
+import qualified Text.Read as Read
 
 -- Supporting modules
 -- https://github.com/timjb/haskell-operational-transformation
@@ -52,8 +59,24 @@ data ServerMessage = ServerNotify Notification
                    | ServerExecuteAll
   deriving (Show, Read)
 
--- A message stamped with the origin host identifier and (server) time stamp 
-data StampedMessage m = StampedMessage HostId UTCTime m
+-- A message stamped with the origin host identifier and (server) time stamp
+data TimeStamp = TimeStamp UTCTime
+
+instance Show TimeStamp where
+  showsPrec d (TimeStamp t) =
+    showParen (d > app_prec) $  
+      showString $ "TimeStamp \"" ++ show t ++ "\""
+    where app_prec = 10
+  
+instance Read TimeStamp where
+  readPrec = 
+    Read.parens $ Read.prec app_prec $ do
+      Read.Ident "TimeStamp" <- Read.lexP
+      time <- Read.step Read.readPrec
+      return $ TimeStamp time
+    where app_prec = 10
+  
+data StampedMessage m = StampedMessage HostId TimeStamp m
   deriving (Show, Read)
 
 type StampedServerMessage = StampedMessage ServerMessage
@@ -102,12 +125,12 @@ data Patch = D Text
 stampServerMessage :: m -> IO (StampedMessage m)
 stampServerMessage m = do 
   t <- getCurrentTime
-  return $ StampedMessage serverId t m
+  return $ StampedMessage serverId (TimeStamp t) m
   
 stampClientMessage :: HostId -> m -> IO (StampedMessage m)
 stampClientMessage cid m = do 
   t <- getCurrentTime
-  return $ StampedMessage cid t m
+  return $ StampedMessage cid (TimeStamp t) m
   
 -- Serialize a message summary (similar to `show`, but used for logging)
 showStampedSummary :: StampedNetworkMessage -> Text
