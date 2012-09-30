@@ -50,10 +50,7 @@
         domElement.appendChild(result.html[i]);
       if (originalCaretPos != null)
         Editor.setCaretOffset(domElement, caret.getPosition());
-      console.log("Highlight...");
-      console.log(file, "EXIT STATE", String(otClient.state));
       otClient.applyClient(otOperations);
-      console.log(file, "ENTER STATE", String(otClient.state));
       return result;
     };
   })(html);

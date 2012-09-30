@@ -90,9 +90,7 @@
             });
           for (i = 0; i < actions.length; ++i)
             opAction(actions[i]);
-          console.log(file, "EXIT STATE", String(otClients[file].state));
           otClients[file].applyServer(op);
-          console.log(file, "ENTER STATE", String(otClients[file].state));
           Editor.highlight(file);
         }).apply(this, message);
       },

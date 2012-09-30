@@ -49,9 +49,7 @@
         otOperations.retain(textContent.length - caretOffset);
 
         // Apply operations to the client
-        console.log(file, "EXIT STATE", String(otClients[file].state));
         otClient.applyClient(otOperations);
-        console.log(file, "ENTER STATE", String(otClients[file].state));
 
         // Mark the file as dirty (needs highlight/reformat)
         dirtyFiles[filename] = true;
@@ -132,9 +130,7 @@
         otOperations.retain(remainingCharacters);
 
         // Apply operations to the client
-        console.log(file, "EXIT STATE", String(otClients[file].state));
         otClient.applyClient(otOperations);
-        console.log(file, "ENTER STATE", String(otClients[file].state));
 
         // Mark the file as dirty (needs highlight/reformat)
         dirtyFiles[filename] = true;
