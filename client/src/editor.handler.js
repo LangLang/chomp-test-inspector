@@ -63,12 +63,39 @@
       return otClients[file];
     };
 
-    Editor.handler = adt.recursive(adt({
+    var storageEventHandler = adt({
       Connected: enableEditor,
       RestoredRootDirectory: enableEditor,
       MovedOutRootDirectory: disableEditor,
       DeleteRootDirectory: disableEditor,
-      UnmountedRootDirectory: disableEditor,
+      UnmountedRootDirectory: disableEditor
+    });
+
+    Editor.handler = adt({
+      'StampedMessage Number TimeStamp OperationalTransform': function(clientId, timeStamp, message) {
+        (function(file, revision, actions) {
+          if (otClients[file] == null) {
+            console.error("...(error) no operational transform client for the file `" + String(file) + "`");
+            return;
+          }
+          if (actions.length === 0)
+            return;
+          var
+            i,
+            op = new ot.Operation(revision),
+            opAction = adt({
+              'Retain': function(n) { op.retain(n); },
+              'Insert': function(t) { op.insert(t); },
+              'Delete': function(n) { op.delete(n); }
+            });
+          for (i = 0; i < actions.length; ++i)
+            opAction(actions[i]);
+          console.log(file, "EXIT STATE", String(otClients[file].state));
+          otClients[file].applyServer(op);
+          console.log(file, "ENTER STATE", String(otClients[file].state));
+          Editor.highlight(file);
+        })(message[0], message[1], message[2]);
+      },
       ProcessMessage: function(file, message) {
         var
           logLine = createLogLine(message),
@@ -83,16 +110,19 @@
       },
       ReloadFiles: function(storageEvent, files) { 
         var i, f;
+        storageEventHandler(storageEvent);
         $("#editors").html("");
         otClients = {};
         for (i = 0; i < files.length; ++i)
           loadFile(files[i]);
       },
       LoadFile: function(storageEvent, file) {
+        storageEventHandler(storageEvent);
         delete otClients[file];
         loadFile(file);
       },
       UnloadFile: function(storageEvent, file) { 
+        storageEventHandler(storageEvent);
         var
           isResult = isResultFile(file),
           baseFilename = isResult? file.slice(0, file.length - ".output".length) : file,
@@ -142,30 +172,13 @@
         $editorInput.attr('contenteditable', false);
         Editor.clear(file);
       },
-      OperationalTransform: function(file, revision, actions) {
-        if (otClients[file] == null) {
-          console.error("...(error) no operational transform client for the file `" + String(file) + "`");
-          return;
-        }
-        if (actions.length === 0)
-          return;
-        var
-          i,
-          op = new ot.Operation(revision),
-          opAction = adt({
-            'Retain': function(n) { op.retain(n); },
-            'Insert': function(t) { op.insert(t); },
-            'Delete': function(n) { op.delete(n); }
-          });
-        for (i = 0; i < actions.length; ++i)
-          opAction(actions[i]);
-        otClients[file].applyServer(op);
-        Editor.highlight(file);
-      },
       ConnectionClosed: function() {
         otClients = {};
         $("#editors").html("");
         disableEditor();
-      }
-    }));
+      },
+      StampedMessage: function(clientId, timeStamp, message) { this(message); },
+      _: function() { console.error("\t...(error) unknown message pattern `" + this._pattern + "` in editor handler"); }
+    });
+
   })(adt({ editor: supersimple.editor.html }, html));

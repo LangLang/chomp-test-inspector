@@ -1,6 +1,7 @@
   var StatusBar = StatusBar || {};  
   (function(html){
-    StatusBar.handler = adt({
+
+    var messageHandler = adt({
       ReloadFiles: function(storageEvent, files) { 
         adt({
           MovedOutRootDirectory: function() { StatusBar.important("The root directory was moved"); },
@@ -30,4 +31,11 @@
       ParseError: function(message) {},
       ConnectionClosed: function() { StatusBar.important("The connection to the server was closed."); }
     });
+
+    StatusBar.handler = adt({
+      StampedMessage: function(clientId, timeStamp, message) {
+        messageHandler(message);
+      }
+    });
+
   })(html);

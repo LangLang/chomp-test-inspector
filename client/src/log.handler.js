@@ -4,7 +4,7 @@
   
     var show = adt({_: function(){ return this._tag; } });
 
-    Log.handler = adt({
+    var messageHandler = adt({
       Acknowledge: function() { console.log("\t...previous message acknowledged"); },
       Notify: function(notification) { console.log("\t...notification (" + show(notification) + "): ", notification); },
       ReloadFiles: function(storageEvent, files) {
@@ -27,6 +27,11 @@
         console.error("\t...previous message this client sent could not be parsed: \n", message); 
       },
       ConnectionClosed: function() {},
-      _: function() { console.error("\t...(error) unknown message type `" + this._tag + "`" ); }
+      _: function() { console.error("\t...(error) unknown message pattern `" + this._pattern + "` in log handler"); }
     });
+  
+    Log.handler = adt({
+      StampedMessage: function(clientId, timeStamp, message) { messageHandler(message); }
+    });
+
   })();

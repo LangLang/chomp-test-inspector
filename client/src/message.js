@@ -1,4 +1,6 @@
   var
+    StampedMessage = adt('StampedMessage'),
+    TimeStamp = adt('TimeStamp'),
     Message = adt(
       // Client-server messages
       'Acknowledge','Notify','ReloadFiles','LoadFile','UnloadFile','LoadFileContents','UnloadFileContents','OperationalTransform','ParseError',
