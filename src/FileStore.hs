@@ -45,4 +45,4 @@ applyOperationalTransform cacheEntry (rev, actions) =
     Left errorMessage -> Left errorMessage
     Right ((OT.TextOperation actions'), OT.ServerState revision' doc' ops') ->
       Right $ (actions', STM.FileCacheEntry (FileInfo { revision = revision', operations = ops' }) doc')
-      
+

@@ -54,7 +54,8 @@ loadFileModifications messages fileStore path =
             in
               if length actions > 0 && (case actions of [OT.Retain _] -> False ; _ -> True) 
                 then do
-                  otResult <- apply fileStore path cacheEntry revision actions
+                  let opId = "n/a" -- It is not necessary to generate a random id for server-generated operations (because they do not require acknowledgement)
+                  otResult <- apply fileStore path cacheEntry revision actions opId
                   case otResult of
                     Left err -> T.putStrLn $ T.pack err
                     Right message -> enqueue message 
@@ -100,8 +101,8 @@ loadFileModifications messages fileStore path =
       Just (prefix, r0, r1) -> (T.length prefix, r0, r1)  
       
 -- Apply operational transform to a file
-applyOperation :: FileStore -> FilePath -> OT.Revision -> [OT.Action] -> IO (Either String ServerMessage) 
-applyOperation fileStore path revision actions = do
+applyOperation :: FileStore -> FilePath -> OT.Revision -> [OT.Action] -> OperationId -> IO (Either String ServerMessage) 
+applyOperation fileStore path revision actions opId = do
   maybeFileEntry <- FileStore.readFileStoreEntryIO fileStore path
   case maybeFileEntry of
     Nothing -> 
@@ -114,18 +115,20 @@ applyOperation fileStore path revision actions = do
           -- TODO: Implement a more sophisticated solution for this case 
           return $ Left $ "The file `" ++ path ++ "`'s contents has not been loaded into the file store."
         Just cacheEntry -> 
-          apply fileStore path cacheEntry revision actions
+          apply fileStore path cacheEntry revision actions opId
       
 -- Apply OT actions to the file store's cache
-apply :: FileStore -> FilePath -> FileStore.FileCacheEntry -> OT.Revision -> [OT.Action] -> IO (Either String ServerMessage)  
-apply fileStore path cacheEntry revision actions = 
+apply :: FileStore -> FilePath -> FileStore.FileCacheEntry -> OT.Revision -> [OT.Action] -> OperationId -> IO (Either String ServerMessage)  
+apply fileStore path cacheEntry revision actions opId = 
   case FileStore.applyOperationalTransform cacheEntry (revision, actions) of
     Left errorMessage -> return $ Left $ "Operational transform failed: " ++ show errorMessage
     Right (actions', cacheEntry') ->
       -- Store updated state in the file store
-      (FileStore.loadCacheIO fileStore path (FileStore.cacheEntryInfo cacheEntry') (FileStore.cacheEntryContents cacheEntry'))
+      let fileInfo' = FileStore.cacheEntryInfo cacheEntry'
+          fileContents' = FileStore.cacheEntryContents cacheEntry' in
+      (FileStore.loadCacheIO fileStore path fileInfo' fileContents')
       -- Add the operational transform to the message queue (to be broadcast to the clients)
-      >> (return $ Right $ ServerOperationalTransform path revision actions')
+      >> (return $ Right $ ServerOperationalTransform path (FileStore.revision fileInfo' - 1) actions' opId)
 
 load :: FilePath -> FilePath -> IO T.Text
 load relPath path = do

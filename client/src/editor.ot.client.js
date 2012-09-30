@@ -28,6 +28,13 @@
       return new Editor.OTOperation(this.callMethodForState('newRevision'));
     };
 
+    OTClient.prototype.applyClient = function (operation) {
+      // Ensure that empty operations are never processed
+      if (operation.ops.length === 0 || (operation.ops.length === 1 && operation.ops[0].retain != null))
+        return;
+      return OTClient.__super__.applyClient.apply(this, arguments);
+    };
+
     OTClient.prototype.sendOperation = function (operation) {
       var 
         i,
@@ -45,7 +52,7 @@
         else
           actions.push(OTAction.Insert(op.insert));
       }
-      message = Message.OperationalTransform(this.file, operation.revision, actions);
+      message = Message.OperationalTransform(this.file, operation.revision, actions, operation.id);
 
       // Send the serialized message to the server
       MessageService.send(state.ws, message);

@@ -27,7 +27,7 @@
       RenamedFile: function(sourceFile, targetFile) {
         StatusBar.info("The file ", html.code(sourceFile), " has been renamed to ", html.code(targetFile));
       },//*/
-      OperationalTransform: function(file, revision, actions) {},
+      OperationalTransform: function(file, revision, actions, opId) {},
       ParseError: function(message) {},
       ConnectionClosed: function() { StatusBar.important("The connection to the server was closed."); }
     });

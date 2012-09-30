@@ -13,6 +13,7 @@ module Message (
   ProcessLog(..), 
   StorageEvent(..), 
   Patch(..),
+  OperationId,
   stampServerMessage,
   stampClientMessage,
   showSummary,
@@ -36,6 +37,8 @@ import qualified Control.OperationalTransformation.Server as OT (Revision)
 import FileStore
 import Client (HostId, serverId)
 
+type OperationId = String
+
 -- Messages sent between clients and the server (and possibly between clients as well)
 data NetworkMessage = Acknowledge
                     | Notify Notification
@@ -44,7 +47,7 @@ data NetworkMessage = Acknowledge
                     | UnloadFile StorageEvent FilePath
                     | LoadFileContents FilePath OT.Revision FileContents
                     | UnloadFileContents FilePath
-                    | OperationalTransform FilePath OT.Revision [OT.Action]
+                    | OperationalTransform FilePath OT.Revision [OT.Action] OperationId
                     | ParseError String
   deriving (Show, Read)
   
@@ -55,7 +58,7 @@ data ServerMessage = ServerNotify Notification
                    | ServerUnloadFile StorageEvent FilePath
                    | ServerLoadFileContents FilePath FileContents
                    | ServerLoadModifications FilePath
-                   | ServerOperationalTransform FilePath OT.Revision [OT.Action] 
+                   | ServerOperationalTransform FilePath OT.Revision [OT.Action] OperationId
                    | ServerExecuteAll
   deriving (Show, Read)
 
@@ -150,13 +153,15 @@ showSummary (LoadFileContents f rev fc) =
   `T.append` (T.pack $ show rev)
   `T.snoc` ' '
   `T.append` (showSummaryString fc)
-showSummary (OperationalTransform path rev actions) =  
+showSummary (OperationalTransform path rev actions opId) =  
   T.pack "OperationalTransform " 
   `T.append` (T.pack $ show path) 
   `T.snoc` ' ' 
   `T.append` (T.pack $ show rev)
   `T.snoc` ' '
   `T.append` (showSummaryOTActions actions)
+  `T.snoc` ' '
+  `T.append` (T.pack $ show opId)
 showSummary m = T.pack $ show m
 
 showSummaryOTActions :: [OT.Action] -> Text

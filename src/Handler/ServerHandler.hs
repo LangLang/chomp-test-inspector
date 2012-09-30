@@ -64,9 +64,9 @@ handler fs sm c maybeExecPath (StampedMessage hostId time message) = case messag
     Observer.WatchFile.loadFileModifications sm fs file
 
   -- Broadcast operational transforms to the clients
-  ServerOperationalTransform file rev actions ->
+  ServerOperationalTransform file rev actions opId ->
     -- Broadcast operations to clients
-    (STM.Clients.broadcastMessage c $ restampMessage $ OperationalTransform file rev actions)
+    (STM.Clients.broadcastMessage c $ restampMessage $ OperationalTransform file rev actions opId)
   
   -- Execute the tool on all files
   ServerExecuteAll -> do

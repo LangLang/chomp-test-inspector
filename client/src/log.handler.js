@@ -22,7 +22,7 @@
       UnloadFileContents: function(file) { 
         console.log("\t...unload file contents: ", file);
       },
-      OperationalTransform: function(file, revision, actions) {},
+      OperationalTransform: function(file, revision, actions, opId) {},
       ParseError: function(message) {
         console.error("\t...previous message this client sent could not be parsed: \n", message); 
       },

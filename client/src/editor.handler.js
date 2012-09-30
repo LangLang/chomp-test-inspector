@@ -72,8 +72,8 @@
     });
 
     Editor.handler = adt({
-      'StampedMessage Number TimeStamp OperationalTransform': function(clientId, timeStamp, message) {
-        (function(file, revision, actions) {
+      'StampedMessage _ _ OperationalTransform': function(clientId, timeStamp, message) {
+        (function(file, revision, actions, opId) {
           if (otClients[file] == null) {
             console.error("...(error) no operational transform client for the file `" + String(file) + "`");
             return;
@@ -82,7 +82,7 @@
             return;
           var
             i,
-            op = new ot.Operation(revision),
+            op = new ot.Operation(revision, opId),
             opAction = adt({
               'Retain': function(n) { op.retain(n); },
               'Insert': function(t) { op.insert(t); },
@@ -94,7 +94,7 @@
           otClients[file].applyServer(op);
           console.log(file, "ENTER STATE", String(otClients[file].state));
           Editor.highlight(file);
-        })(message[0], message[1], message[2]);
+        }).apply(this, message);
       },
       ProcessMessage: function(file, message) {
         var

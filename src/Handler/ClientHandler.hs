@@ -17,9 +17,9 @@ import qualified Observer.WatchFile
 handler :: FileStore -> STM.ServerMessages -> Clients -> StampedNetworkMessage -> IO ()
 handler fs sm c (StampedMessage cid t message) = case message of
   -- Apply operational transform sent by the client
-  OperationalTransform file rev actions -> do
+  OperationalTransform file rev actions opId -> do
     -- Apply changes to the file store
-    errorOrMessage <- Observer.WatchFile.applyOperation fs file rev actions
+    errorOrMessage <- Observer.WatchFile.applyOperation fs file rev actions opId
     case errorOrMessage of
       Left err -> System.IO.hPutStrLn System.IO.stderr err
       Right message' -> enqueue $ restamp message'
