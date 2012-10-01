@@ -46,9 +46,9 @@ executable chomp-test-inspector
   other-modules: WebsocketApp FileStore Message WebApp
                  TestInspectorPage STM.FileStore STM.Messages
                  Observer.WatchDirectory Observer.WatchFile
-                 Observer.WatchExecutable MessageDispatch ServerState
-                 STM.Clients Handler.ServerHandler Handler.ClientHandler
-                 Client
+                 Observer.WatchExecutable OTServer MessageDispatch 
+                 ServerState STM.Clients Handler.ServerHandler
+                 Handler.ClientHandler Client
   ghc-prof-options:
   ghc-shared-options:
   hugs-options:

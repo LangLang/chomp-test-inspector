@@ -16,7 +16,8 @@ import Data.Text (Text)
 -- Supporting modules
 -- https://github.com/timjb/haskell-operational-transformation
 import qualified Control.OperationalTransformation.Text as OT
-import qualified Control.OperationalTransformation.Server as OT
+import qualified Control.OperationalTransformation.Server as OT -- TODO: remove
+import qualified OTServer
 
 -- Application modules
 import STM.FileStore hiding (FileStore, FileStoreEntry, FileCacheEntry)
