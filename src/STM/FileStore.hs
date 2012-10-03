@@ -27,7 +27,9 @@ module STM.FileStore (
 import Control.Monad (liftM, (<=<), filterM)
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TVar as TVar
-import Data.Maybe (isNothing)
+import Control.Monad.Trans.Maybe
+--import Control.Monad.Trans.Class
+import Data.Maybe
 import qualified Data.STM.TList as TList
 import qualified Data.STM.TCursor as TCursor
 import Data.STM.TCursor (TCursor)
@@ -74,18 +76,13 @@ allFilesIO fs = do
 
 -- Read the contents 
 readFileContentsIO :: (FileStore fiType fcType) -> FilePath -> IO (Maybe fcType)
-readFileContentsIO fs f = do 
-  maybeEntry <- (readFileStoreEntryIO fs f)
-  case maybeEntry of
-    Nothing -> return Nothing
-    Just fileEntry -> do
-      maybeCacheEntry <- fileEntryCacheIO fileEntry
-      case maybeCacheEntry of
-        Nothing -> return Nothing
-        Just cacheEntry ->
-          return $ Just $ cacheEntryContents cacheEntry
+readFileContentsIO fs f = (liftM $ liftM cacheEntryContents) $ 
+  runMaybeT $
+    (MaybeT (readFileStoreEntryIO fs f))
+    >>= (MaybeT . fileEntryCacheIO)
 
 {- For presentation: Why is this not possible?
+-- TODO: Use the maybe monad transformer to accomplish this
 readFileContentsIO :: (FileStore fiType fcType) -> FilePath -> IO (Maybe fcType)
 readFileContentsIO fs f = do
   fileEntry <- (readFileStoreEntryIO fs f)
@@ -116,9 +113,9 @@ reloadIO fs filesToLoad = do
 loadIO :: (FileStore fiType fcType) -> FilePath -> IO Bool
 loadIO fs f = do
   existingEntry <- readFileStoreEntryIO fs f
-  case existingEntry of
-    Just _ -> return False
-    Nothing -> do
+  if isJust existingEntry
+    then return False
+    else do
       newEntry <- createFileStoreEntryIO f
       _ <- atomically $ do
         oldList <- readTVar $ files fs
@@ -190,8 +187,6 @@ readFileStoreEntryIO fs f = do
 
 -- Read a specific file entry from the file store (used internally)
 readFileCacheEntryIO :: (FileStore fiType fcType) -> FilePath -> IO (Maybe (FileCacheEntry fiType fcType))
-readFileCacheEntryIO fs f = do
-  maybeFileEntry <- readFileStoreEntryIO fs f
-  case maybeFileEntry of
-    Nothing -> return Nothing
-    Just fileEntry -> fileEntryCacheIO fileEntry 
+readFileCacheEntryIO fs f = runMaybeT $
+  (MaybeT $ readFileStoreEntryIO fs f)
+  >>= (MaybeT . fileEntryCacheIO) 

@@ -80,6 +80,7 @@ executable chomp-test-inspector
                   stm-tlist -any,
                   text -any,
                   time -any,
+                  transformers -any,
                   wai -any,
                   wai-app-static -any,
                   wai-websockets -any,
