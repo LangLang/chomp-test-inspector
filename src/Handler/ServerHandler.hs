@@ -8,7 +8,7 @@ import Control.Monad (liftM)
 
 -- Application modules
 import Message
-import qualified FileStore
+import qualified FileStore as FS
 import FileStore (FileStore)
 import WebsocketApp (Clients)
 import Client (serverId)
@@ -26,37 +26,37 @@ handler fs sm c maybeExecPath (StampedMessage hostId time message) = case messag
 
   -- Reload all files (or none)
   ServerReloadFiles event files ->
-    FileStore.reloadIO fs files
+    FS.reloadIO fs files
     >> (STM.Clients.broadcastMessage c $ restampMessage $ ReloadFiles event files)
-    >> (Observer.WatchFile.loadFilesContents sm (FileStore.rootPath fs) files)
+    >> (Observer.WatchFile.loadFilesContents sm (FS.rootPath fs) files)
     >> if isJust maybeExecPath 
       then Observer.WatchExecutable.runEach
         sm 
         (fromJust maybeExecPath) 
-        (FileStore.rootPath fs) $ 
+        (FS.rootPath fs) $ 
           filter ((== ".source") . System.FilePath.takeExtension) files
       else return ()
     
   -- Load a file
   ServerLoadFile event file -> do
     -- Use the file store to determine whether the file is merely being replaced (thus modified)
-    alreadyLoaded <- liftM not $ FileStore.loadIO fs file
+    alreadyLoaded <- liftM not $ FS.loadIO fs file
     if alreadyLoaded 
       then return ()
       else (STM.Clients.broadcastMessage c $ restampMessage $ LoadFile event file)
-        >> (Observer.WatchFile.loadFileContents sm (FileStore.rootPath fs) file)
+        >> (Observer.WatchFile.loadFileContents sm (FS.rootPath fs) file)
         >> if System.FilePath.takeExtension file == ".source" && isJust maybeExecPath 
-          then Observer.WatchExecutable.run sm (fromJust maybeExecPath) (FileStore.rootPath fs) file
+          then Observer.WatchExecutable.run sm (fromJust maybeExecPath) (FS.rootPath fs) file
           else return ()
 
   -- Unload a file
   ServerUnloadFile event file -> 
-    FileStore.unloadIO fs file
+    FS.unloadIO fs file
     >> (STM.Clients.broadcastMessage c $ restampMessage $ UnloadFile event file)
   
   -- Load a file's contents
   ServerLoadFileContents file fileContents ->
-    FileStore.storeCacheIO fs file (FileStore.FileInfo { FileStore.contentsRevision = 0, FileStore.operations = [], FileStore.closedCounter = 0 }) fileContents 
+    FS.storeCacheIO fs file (FS.FileInfo { FS.contentsRevision = 0, FS.operations = [], FS.closedCounter = 0 }) fileContents 
     >> (STM.Clients.broadcastMessage c $ restampMessage $ LoadFileContents file 0 fileContents)
   
   -- Modified a file
@@ -70,12 +70,12 @@ handler fs sm c maybeExecPath (StampedMessage hostId time message) = case messag
   
   -- Execute the tool on all files
   ServerExecuteAll -> do
-    files <- FileStore.allFilesIO fs
+    files <- FS.allFilesIO fs
     Observer.WatchExecutable.runEach
       sm
       (fromJust maybeExecPath) 
-      (FileStore.rootPath fs) $ 
-        filter ((== ".source") . System.FilePath.takeExtension) files
+      (FS.rootPath fs) 
+      (filter ((== ".source") . System.FilePath.takeExtension) files)
 
   -- Unknown message
   _ -> System.IO.hPutStrLn System.IO.stderr $ "Unhandled server message from "

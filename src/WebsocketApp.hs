@@ -21,7 +21,7 @@ import qualified Data.STM.TList as TList
 import Safe (readMay)
 
 -- Application modules
-import qualified FileStore
+import qualified FileStore as FS
 import FileStore (FileStore)
 import qualified STM.Clients as STM
 import Client (HostId, clientId)
@@ -65,8 +65,8 @@ websocketApp appState waiReq wsReq = do
   -- Send the list of files and along with their cached contents & information (revision) to the client
   -- TODO: Read an "active" flag from the file store.
   --       If the file store is not active, then send ReloadFiles LostRootDirectory or similar instead
-  files <- liftIO $ FileStore.allFilesIO (appFileStore appState)
-  maybeCacheEntries <- liftIO $ mapM (FileStore.readFileCacheEntryIO $ appFileStore appState) files
+  files <- liftIO $ FS.allFilesIO (appFileStore appState)
+  maybeCacheEntries <- liftIO $ mapM (FS.readFileCacheEntryIO $ appFileStore appState) files
   _ <- sendMessage <=< (liftIO . stampServerMessage) $ ReloadFiles Connected files
   _ <- zipWithM_ sendLoadFileContents files maybeCacheEntries
   
@@ -99,13 +99,13 @@ websocketApp appState waiReq wsReq = do
       `snoc` ' ' 
       `append` (pack $ show $ Wai.httpVersion waiReq)
 
-    sendLoadFileContents :: FilePath -> Maybe FileStore.FileCacheEntry -> WebSockets Hybi10 ()
+    sendLoadFileContents :: FilePath -> Maybe FS.FileCacheEntry -> WebSockets Hybi10 ()
     sendLoadFileContents file maybeCacheEntry =
       sendMessage <=< (liftIO . stampServerMessage) $ case maybeCacheEntry of
         Nothing -> UnloadFileContents file
         Just cacheEntry -> LoadFileContents file 
-          (FileStore.opsRevision $ FileStore.cacheEntryInfo cacheEntry)
-          (FileStore.cacheEntryContents cacheEntry)
+          (FS.opsRevision $ FS.cacheEntryInfo cacheEntry)
+          (FS.cacheEntryContents cacheEntry)
 
 sendMessage :: TextProtocol p => StampedNetworkMessage -> WebSockets p () 
 sendMessage message = do

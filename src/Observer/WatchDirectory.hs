@@ -18,7 +18,7 @@ import qualified GHC.IO.Exception as Exception
 
 -- Application modules
 import Message
-import qualified FileStore
+import qualified FileStore as FS
 import FileStore (FileStore)
 import qualified STM.Messages
 import qualified STM.Messages as STM (ServerMessages)
@@ -30,14 +30,14 @@ type WatchDirectoryHandle = INotify
 -- Run the asynchronous directory watch
 forkObserver :: FileStore -> STM.ServerMessages -> IO (Maybe WatchDirectoryHandle)
 forkObserver fileStore messages = do
-  let rootPath = FileStore.rootPath fileStore
+  let rootPath = FS.rootPath fileStore
   -- Try to load files in the watch directory
   errorOrFiles <- try $ listAllFiles rootPath 
   -- Either fail gracefully if reading the path failed, or start watching the directory
   case errorOrFiles of
     Left e -> do
       -- Clear the file store and return no observer
-      FileStore.clearIO fileStore
+      FS.clearIO fileStore
       case generateIOErrorMessage rootPath $ ioeGetErrorType e of 
         Just message -> do
           hPutStrLn stderr message
