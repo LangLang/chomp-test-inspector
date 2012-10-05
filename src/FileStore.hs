@@ -54,7 +54,7 @@ type FileCacheEntry = STM.FileCacheEntry FileInfo FileContents
 
 -- Accessor function to get the operations revision of a file info
 opsRevision :: FileInfo -> OT.Revision
-opsRevision fi = fromIntegral $ length (operations fi) - 1  
+opsRevision fi = fromIntegral $ length (operations fi)  
 
 -- Merge an operation at the contents revision of the cached file
 mergeAtContentsRevision :: FileCacheEntry -> OT.TextOperation -> Either String FileCacheEntry
