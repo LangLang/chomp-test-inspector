@@ -56,7 +56,7 @@ handler fs sm c maybeExecPath (StampedMessage hostId time message) = case messag
   
   -- Load a file's contents
   ServerLoadFileContents file fileContents ->
-    FileStore.loadCacheIO fs file (FileStore.FileInfo { FileStore.revision = 0, FileStore.operations = [] }) fileContents 
+    FileStore.storeCacheIO fs file (FileStore.FileInfo { FileStore.contentsRevision = 0, FileStore.operations = [], FileStore.closedCounter = 0 }) fileContents 
     >> (STM.Clients.broadcastMessage c $ restampMessage $ LoadFileContents file 0 fileContents)
   
   -- Modified a file

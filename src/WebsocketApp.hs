@@ -104,7 +104,7 @@ websocketApp appState waiReq wsReq = do
       sendMessage <=< (liftIO . stampServerMessage) $ case maybeCacheEntry of
         Nothing -> UnloadFileContents file
         Just cacheEntry -> LoadFileContents file 
-          (FileStore.revision (FileStore.cacheEntryInfo cacheEntry))
+          (FileStore.opsRevision $ FileStore.cacheEntryInfo cacheEntry)
           (FileStore.cacheEntryContents cacheEntry)
 
 sendMessage :: TextProtocol p => StampedNetworkMessage -> WebSockets p () 

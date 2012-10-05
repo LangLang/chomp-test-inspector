@@ -11,10 +11,13 @@ module STM.FileStore (
   clearIO,
   reloadIO,
   loadIO,
-  loadCacheIO,
+  storeCacheIO,
+  storeCacheEntryIO,
+  --storeCacheEntrySTM,
+  modifyTestCacheEntryIO,
   unloadIO,
-  fileEntryPathT,
-  fileEntryCacheT,
+  fileEntryPathSTM,
+  fileEntryCacheSTM,
   fileEntryPathIO,
   fileEntryCacheIO
 ) where
@@ -24,7 +27,7 @@ module STM.FileStore (
 -- store itself does not get involved in physical disk access or messaging tasks.   
 
 -- Standard modules
-import Control.Monad (liftM, (<=<), filterM)
+import Control.Monad
 import Control.Concurrent.STM (STM, atomically)
 import Control.Concurrent.STM.TVar as TVar
 import Control.Monad.Trans.Maybe
@@ -35,24 +38,27 @@ import qualified Data.STM.TCursor as TCursor
 import Data.STM.TCursor (TCursor)
 import Prelude hiding (readFile)
 
+type FilePathTVar = TVar FilePath
+type FileCacheEntryTVar fileInfoType fileContentsType = TVar (Maybe (FileCacheEntry fileInfoType fileContentsType))
+
 data FileCacheEntry fileInfoType fileContentsType = FileCacheEntry {
     cacheEntryInfo :: fileInfoType,
     cacheEntryContents :: fileContentsType
   }
 
 data FileStoreEntry fileInfoType fileContentsType = FileStoreEntry {
-    fileEntryPath :: TVar FilePath,
-    fileEntryCache :: TVar (Maybe (FileCacheEntry fileInfoType fileContentsType))
+    fileEntryPath :: FilePathTVar,
+    fileEntryCache :: FileCacheEntryTVar fileInfoType fileContentsType
   }
-  
-fileEntryPathT :: (FileStoreEntry fiType fcType) -> STM FilePath
-fileEntryPathT = readTVar . fileEntryPath
+
+fileEntryPathSTM :: (FileStoreEntry fiType fcType) -> STM FilePath
+fileEntryPathSTM = readTVar . fileEntryPath
 
 fileEntryPathIO :: (FileStoreEntry fiType fcType) -> IO FilePath
 fileEntryPathIO = readTVarIO . fileEntryPath
 
-fileEntryCacheT :: (FileStoreEntry fiType fcType) -> STM (Maybe (FileCacheEntry fiType fcType))
-fileEntryCacheT = readTVar . fileEntryCache
+fileEntryCacheSTM :: (FileStoreEntry fiType fcType) -> STM (Maybe (FileCacheEntry fiType fcType))
+fileEntryCacheSTM = readTVar . fileEntryCache
 
 fileEntryCacheIO :: (FileStoreEntry fiType fcType) -> IO (Maybe (FileCacheEntry fiType fcType))
 fileEntryCacheIO = readTVarIO . fileEntryCache
@@ -127,14 +133,40 @@ loadIO fs f = do
       return True
 
 -- Load file cache entry into the store
-loadCacheIO :: (FileStore fiType fcType) -> FilePath -> fiType -> fcType -> IO Bool
-loadCacheIO fs f fi fc = do
+storeCacheIO :: FileStore fiType fcType -> FilePath -> fiType -> fcType -> IO Bool
+storeCacheIO fs f fi fc = storeCacheEntryIO fs f $ FileCacheEntry { cacheEntryInfo = fi, cacheEntryContents = fc}
+
+storeCacheEntryIO :: FileStore fiType fcType -> FilePath -> FileCacheEntry fiType fcType -> IO Bool
+storeCacheEntryIO fs f cacheEntry = do
   maybeEntry <- readFileStoreEntryIO fs f
   case maybeEntry of
-    Nothing -> return False
-    Just fileEntry ->
-      (atomically $ writeTVar (fileEntryCache fileEntry) $ Just $ FileCacheEntry { cacheEntryInfo = fi, cacheEntryContents = fc})
-      >> return True
+    Nothing        -> return False
+    Just fileEntry -> do
+      atomically $ writeTVar (fileEntryCache fileEntry) (Just cacheEntry)
+      return True
+
+-- Atomically read, modify/test a file cache entry 
+-- Returns Nothing if no entry could be found, otherwise either the original cache entry (Left) 
+-- or the modified cache entry (Right) depending on the result of the modify operation  
+modifyTestCacheEntryIO :: FileStore fi fc 
+                       -> FilePath 
+                       -> (FileCacheEntry fi fc -> Maybe (FileCacheEntry fi fc))
+                       -> IO (Maybe (Either (FileCacheEntry fi fc) (FileCacheEntry fi fc)))
+modifyTestCacheEntryIO fs f op = do  
+  maybeEntry <- readFileStoreEntryIO fs f
+  case maybeEntry of
+    Nothing        -> return Nothing
+    Just fileEntry -> atomically $ do
+      let cacheEntryT = fileEntryCache fileEntry
+      maybeCacheEntry <- readTVar cacheEntryT
+      case maybeCacheEntry of
+        Nothing         -> return Nothing
+        Just cacheEntry -> do
+          case op cacheEntry of
+            Nothing          -> return $ Just $ Left cacheEntry    
+            Just cacheEntry' -> do
+              writeTVar cacheEntryT $ Just cacheEntry' 
+              return $ Just $ Right cacheEntry'
 
 -- Remove the file from the file store
 unloadIO :: (FileStore fiType fcType) -> FilePath -> IO ()

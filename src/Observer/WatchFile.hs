@@ -1,33 +1,36 @@
-module Observer.WatchFile (loadFileContents, loadFilesContents, loadFileModifications, applyOperation) where
+module Observer.WatchFile (loadFileContents, loadFilesContents, loadFileModifications {-, applyOperation-}) where
 
 -- Standard modules
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+-- import Data.Functor
 import qualified Control.Concurrent
-import Control.Monad ((<=<))
+import Control.Monad
+-- import Control.Monad.Trans.Maybe
 import qualified System.FilePath as FilePath
 import qualified Data.Algorithm.Diff as Diff
+import qualified System.IO as IO
 
 -- Supporting modules
 -- https://github.com/timjb/haskell-operational-transformation
 import qualified Control.OperationalTransformation.Text as OT
-import qualified Control.OperationalTransformation.Server as OT
+-- import qualified Control.OperationalTransformation.Server as OT
 
 -- Application modules
 import Message
-import qualified FileStore
+import qualified FileStore as FS
 import FileStore (FileStore)
+import qualified STM.FileStore as STM.FS
 import qualified STM.Messages as STM (ServerMessages)
 import qualified STM.Messages
 
 loadFileContents :: STM.ServerMessages -> FilePath -> FilePath -> IO ()
-loadFileContents messages rootPath path =
+loadFileContents messages rootPath path = do
   T.putStrLn (T.pack "Loading file " `T.append` T.pack path `T.append` T.pack "...")
-  >> (Control.Concurrent.forkIO $ do
+  Control.Concurrent.forkIO $ do
     contents <- load relPath path
-    enqueue $ ServerLoadFileContents path contents)
-  >> return ()
-  
+    enqueue $ ServerLoadFileContents path contents
+  >> return ()  
   where
     enqueue = STM.Messages.enqueue messages <=< stampServerMessage
     relPath = rootPath `FilePath.combine` path
@@ -36,44 +39,83 @@ loadFilesContents :: STM.ServerMessages -> FilePath -> [FilePath] -> IO ()
 loadFilesContents messages rootPath = mapM_ (Observer.WatchFile.loadFileContents messages rootPath)
 
 loadFileModifications :: STM.ServerMessages -> FileStore -> FilePath -> IO ()
-loadFileModifications messages fileStore path =
-  (Control.Concurrent.forkIO $ do
-    maybeFileEntry <- FileStore.readFileStoreEntryIO fileStore path
-    -- TODO: (IMPORTANT) increment revision numbers appropriately
-    newContents <- load relPath path
-    case maybeFileEntry of
-      Nothing -> enqueue $ ServerLoadFileContents path newContents
-      Just fileEntry -> do
-        maybeCacheEntry <- FileStore.fileEntryCacheIO fileEntry
-        case maybeCacheEntry of
-          Nothing -> enqueue $ ServerLoadFileContents path newContents
-          Just cacheEntry ->
-            let oldContents = FileStore.cacheEntryContents cacheEntry
-                actions = generateActions oldContents newContents
-                revision = FileStore.revision $ FileStore.cacheEntryInfo cacheEntry 
-            in
-              if length actions > 0 && (case actions of [OT.Retain _] -> False ; _ -> True) 
-                then do
-                  let opId = "n/a" -- It is not necessary to generate a random id for server-generated operations (because they do not require acknowledgement)
-                  otResult <- apply fileStore path cacheEntry revision actions opId
-                  case otResult of
-                    Left err -> T.putStrLn $ T.pack err
-                    Right message -> enqueue message 
-                else (T.putStrLn $ T.pack "No changes detected in the contents of the modified file, '" `T.append` (T.pack path) `T.append` (T.pack "'.")))
-  >> (return ())
+loadFileModifications messages fileStore path = do
+  let rootPath = FS.rootPath fileStore
+      relPath = rootPath `FilePath.combine` path
+  -- Run a separate thread to load the file contents and perform a diff 
+  Control.Concurrent.forkIO $ do
+    {- Test whether the file was written to and could be safely ignored 
+    maybeCacheEntry     <- runMaybeT $ 
+      MaybeT (FS.readFileStoreEntryIO fileStore path) 
+      >>= MaybeT . FS.fileEntryCacheIO
+    -}
+    
+    -- In order to avoid the file being changed any time during this function, we open the file
+    -- in write mode and keep it open for the duration of the function (effectively putting a
+    -- write lock on it)
+    -- We use a closed counter to test whether the file needs to be tested for modifications, or if
+    -- this signal was simply the result of closing the file handle ourselves
+       
+    maybeMaybeCacheEntry <- FS.modifyTestCacheEntryIO fileStore path decTestClosedCounter
+    case maybeMaybeCacheEntry of
+      Nothing                -> do -- The file's contents is not currently in the cache
+        load relPath path
+        >>= (enqueue . ServerLoadFileContents path)
+      Just (Right _)  ->           -- (closed counter was > 0)
+                                   -- Don't load the file if the closed counter has been decremented 
+        return () 
+      Just (Left cacheEntry) -> do -- (closed counter was == 0)
+                                   -- Open the file using a write a lock and test if it has been modified
+        do
+          (h, storedContents) <- loadWriteLocked relPath path
+          let cachedContents  = FS.cacheEntryContents cacheEntry
+              actions         = generateActions cachedContents storedContents 
+              op              = OT.TextOperation actions 
+          if length actions == 0 || (case actions of [OT.Retain _] -> False ; _ -> True) 
+            then putStrLn $ "No changes detected in the contents of the modified file, '" ++ path ++ "'." 
+            else
+              let eitherCacheEntry' = FS.mergeAtContentsRevision cacheEntry op
+              in case eitherCacheEntry' of
+                Left err -> T.putStrLn $ T.pack err
+                Right cacheEntry' -> do
+                    eitherCacheEntry'' <- FS.updateFileContentsIO fileStore path $ incClosedCounter cacheEntry'            
+                    case eitherCacheEntry'' of
+                      Left err -> T.putStrLn $ T.pack err
+                      Right cacheEntry'' -> let
+                        contents'                     = FS.cacheEntryContents cacheEntry''
+                        ops'                          = FS.operations $ FS.cacheEntryInfo cacheEntry'' 
+                        (OT.TextOperation actions'):_ = ops'
+                        opId                          = "n/a" -- It is not necessary to generate a random id for server-generated operations
+                                                              -- (because they do not require acknowledgement)
+                        in do
+                          if (contents' /= storedContents) 
+                            then do
+                              putStr $ "\t...Writing changes to '" ++ path ++ "'" 
+                              writeToDisk h contents'
+                              putStrLn " (Done)"
+                            else
+                              putStrLn $ "\t...No changes to write to '" ++ path ++ "'"
+                          enqueue $ ServerOperationalTransform path (fromIntegral $ length ops' - 1) actions' opId
+          IO.hClose h
+  >> return ()
   where
-    rootPath = FileStore.rootPath fileStore
-    relPath = rootPath `FilePath.combine` path
     enqueue = STM.Messages.enqueue messages <=< stampServerMessage
+    
+    incClosedCounter :: FS.FileCacheEntry -> FS.FileCacheEntry 
+    incClosedCounter (STM.FS.FileCacheEntry fi@(FS.FileInfo {FS.closedCounter=cc}) fc) =
+      STM.FS.FileCacheEntry (fi {FS.closedCounter = cc + 1}) fc
+    
+    decTestClosedCounter :: FS.FileCacheEntry -> Maybe FS.FileCacheEntry
+    decTestClosedCounter (STM.FS.FileCacheEntry fi@(FS.FileInfo {FS.closedCounter=cc}) fc) =
+      if cc > 0
+        then Just $ STM.FS.FileCacheEntry (fi {FS.closedCounter = cc - 1}) fc
+        else Nothing
     
     -- TODO: This is likely to be slow because text is being unpacked
     --       Also, probably using a more expensive diff algorithm than necessary
     --       See http://stackoverflow.com/questions/4611143/diffing-more-quickly
     --       and http://hackage.haskell.org/packages/archive/patience/0.1.1/doc/html/Data-Algorithm-Patience.html
     --       for possible alternatives
-    
-    -- TODO: Is cons the correct order here? (shouldn't be snoc?)
-        
     generateActions :: T.Text -> T.Text -> [OT.Action]
     generateActions os ns =
       if T.null ns
@@ -98,18 +140,25 @@ loadFileModifications messages fileStore path =
     getCommon :: T.Text -> T.Text -> (Int, T.Text, T.Text)
     getCommon t0 t1 = case T.commonPrefixes t0 t1 of
       Nothing -> (0, t0, t1)
-      Just (prefix, r0, r1) -> (T.length prefix, r0, r1)  
-      
+      Just (prefix, r0, r1) -> (T.length prefix, r0, r1)
+    
+    writeToDisk :: IO.Handle -> T.Text -> IO ()
+    writeToDisk h text = do
+      IO.hSeek h IO.AbsoluteSeek 0
+      T.hPutStr h text
+      IO.hSetFileSize h =<< IO.hTell h 
+
+{-
 -- Apply operational transform to a file
 applyOperation :: FileStore -> FilePath -> OT.Revision -> [OT.Action] -> OperationId -> IO (Either String ServerMessage) 
 applyOperation fileStore path revision actions opId = do
-  maybeFileEntry <- FileStore.readFileStoreEntryIO fileStore path
+  maybeFileEntry <- FS.readFileStoreEntryIO fileStore path
   case maybeFileEntry of
     Nothing -> 
       -- TODO: Implement a more sophisticated solution for this case 
       return $ Left $ "The file `" ++ path ++ "` could not be located in the file store." 
     Just fileEntry -> do
-      maybeCacheEntry <- FileStore.fileEntryCacheIO fileEntry
+      maybeCacheEntry <- FS.fileEntryCacheIO fileEntry
       case maybeCacheEntry of
         Nothing -> 
           -- TODO: Implement a more sophisticated solution for this case 
@@ -118,20 +167,30 @@ applyOperation fileStore path revision actions opId = do
           apply fileStore path cacheEntry revision actions opId
       
 -- Apply OT actions to the file store's cache
-apply :: FileStore -> FilePath -> FileStore.FileCacheEntry -> OT.Revision -> [OT.Action] -> OperationId -> IO (Either String ServerMessage)  
+apply :: FileStore -> FilePath -> FS.FileCacheEntry -> OT.Revision -> [OT.Action] -> OperationId -> IO (Either String ServerMessage)  
 apply fileStore path cacheEntry revision actions opId = 
-  case FileStore.applyOperationalTransform cacheEntry (revision, actions) of
+  case FS.applyOperationalTransform cacheEntry (revision, actions) of
     Left errorMessage -> return $ Left $ "Operational transform failed: " ++ show errorMessage
     Right (actions', cacheEntry') ->
       -- Store updated state in the file store
-      let fileInfo' = FileStore.cacheEntryInfo cacheEntry'
-          fileContents' = FileStore.cacheEntryContents cacheEntry' in
-      (FileStore.loadCacheIO fileStore path fileInfo' fileContents')
-      -- Add the operational transform to the message queue (to be broadcast to the clients)
-      >> (return $ Right $ ServerOperationalTransform path (FileStore.revision fileInfo' - 1) actions' opId)
+      let fileInfo' = FS.cacheEntryInfo cacheEntry'
+          fileContents' = FS.cacheEntryContents cacheEntry' in
+      (FS.storeCacheIO fileStore path cacheEntry)
+        -- Add the operational transform to the message queue (to be broadcast to the clients)
+      >> (return $ Right $ ServerOperationalTransform path (FS.revision fileInfo' - 1) actions' opId)
+-}
 
+-- Reads the file contents 
 load :: FilePath -> FilePath -> IO T.Text
 load relPath path = do
   contents <- T.readFile relPath
-  T.putStrLn (T.pack "\t...File loaded " `T.append` T.pack path)
+  putStrLn $ "\t...File loaded " ++ path
   return contents
+
+-- Reads the file contents and returns an open (write-locked) file handle and the contents of the file)
+loadWriteLocked :: FilePath -> FilePath -> IO (IO.Handle, T.Text)
+loadWriteLocked relPath path = do
+  h <- IO.openFile relPath IO.ReadWriteMode
+  contents <- T.hGetContents h
+  putStrLn $ "\t...File loaded " ++ path ++ " (with write lock)"
+  return (h, contents)
