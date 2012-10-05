@@ -3,12 +3,11 @@ module Observer.WatchDirectory(WatchDirectoryHandle, forkObserver, killObserver)
 
 -- Standard modules
 import Prelude hiding (putStrLn)
-import Data.Text hiding (map, filter)
-import Data.Text.IO (putStrLn, hPutStrLn)
 import Data.String.Utils (endswith)
 --import Control.Monad.Trans (liftIO)
 import Control.Monad (liftM, (<=<))
 import System.IO (stderr)
+import System.IO (putStrLn, hPutStrLn)
 import System.IO.Error (ioeGetErrorType, IOErrorType)
 import Control.Exception (try)
 import System.INotify (INotify, EventVariety(..), Event(..), initINotify, killINotify, addWatch)
@@ -41,7 +40,7 @@ forkObserver fileStore messages = do
       FileStore.clearIO fileStore
       case generateIOErrorMessage rootPath $ ioeGetErrorType e of 
         Just message -> do
-          hPutStrLn stderr $ pack message
+          hPutStrLn stderr message
           return Nothing
         Nothing -> ioError e
     Right files ->
@@ -87,21 +86,21 @@ inotifyEvent rootPath messages event = do
     -- A file was modified
     Modified False maybePath -> do
       putStrLn $ case maybePath of
-        Just p -> "'" `append` pack p `append` "' was modified."
+        Just p -> "'" ++ p ++ "' was modified."
         Nothing -> "An unknown was modified."
       return ()
         
     -- A file's attributes have changed
     Attributes False maybePath -> do
       putStrLn $ case maybePath of
-        Just p -> "The file '" `append` pack p `append` "'s attributes has changed."
+        Just p -> "The file '" ++ p ++ "'s attributes has changed."
         Nothing -> "An unknown file's attributes has changed."
       -- TODO: notify the client if the file has become read-only (then gray out the editor)
    
     -- A modified file's handle was closed    
     Closed False maybePath True -> do
       putStrLn $ case maybePath of
-        Just p -> "'" `append` pack p `append` "' was closed with modifications."
+        Just p -> "'" ++ p ++ "' was closed with modifications."
         Nothing -> "An unknown file was closed with modifications."
       case maybePath of
         -- TODO: Don't load modifications if they were made by us
@@ -110,12 +109,12 @@ inotifyEvent rootPath messages event = do
     
     -- A file was moved out of the watch path, so remove it from the file store
     MovedOut False p _ -> do
-      putStrLn $ "'" `append` pack p `append` "' was moved out."
+      putStrLn $ "'" ++ p ++ "' was moved out."
       unloadFile MovedOutFile p
       
     -- A file was moved into the watch path, so load it into the file store
     MovedIn False p _ -> do
-      putStrLn $ "'" `append` pack p `append` "' was moved in." --TODO: use the cookie to check whether the file was actually renamed
+      putStrLn $ "'" ++ p ++ "' was moved in." --TODO: use the cookie to check whether the file was actually renamed
       loadFile MovedInFile p
     
     -- The watch path was moved, so empty the storage
@@ -125,12 +124,12 @@ inotifyEvent rootPath messages event = do
     
     -- A new file was created, load it into the file store 
     Created False p -> do
-      putStrLn $ "'" `append` pack p `append` "' was created."
+      putStrLn $ "'" ++ p ++ "' was created."
       loadFile CreatedFile p
      
     -- A file in the watch path was deleted, so remove it from the file store
     Deleted False p -> do 
-      putStrLn $ "'" `append` pack p `append` "' was deleted."
+      putStrLn $ "'" ++ p ++ "' was deleted."
       unloadFile DeletedFile p
       
     -- The watch path was deleted, so remove all files from the file store
@@ -147,7 +146,7 @@ inotifyEvent rootPath messages event = do
     -- The inotify queue overflowed, remove all files from the file store
     -- TODO: Try to start from scratch by clearing the queues and reloading all files? 
     QOverflow -> do
-      putStrLn $ "The watch queue for '" `append` pack rootPath `append` "' overflowed, unload all the files."
+      putStrLn $ "The watch queue for '" ++ rootPath ++ "' overflowed, unload all the files."
       unloadFiles Error
     
     _ -> return ()

@@ -2,12 +2,12 @@
 module STM.Clients (Client(..), Clients, showClientSummaryIO, newIO, broadcastMessage) where
 
 -- Standard modules
-import Prelude hiding (putStrLn)
+--import Prelude hiding (putStrLn)
 import Control.Concurrent.STM (atomically, readTVarIO)
 import Data.STM.TList (TList)
 import qualified Data.STM.TList as TList
 import Data.Text (Text, pack, append, snoc)
-import Data.Text.IO (putStrLn)
+--import Data.Text.IO (putStrLn)
 --import Data.IntMap (IntMap)
 --import qualified Data.IntMap as IntMap
 import qualified Network.WebSockets as WS
@@ -39,19 +39,19 @@ newIO = TList.emptyIO
 -- Broadcast a message to all the clients in the list
 broadcastMessage :: WS.TextProtocol p => Clients p -> StampedNetworkMessage -> IO ()
 broadcastMessage clients message = do
-  putStrLn $ "Broadcast message...\n\t..." `append` showStampedSummary message
+  putStrLn $ "Broadcast message...\n\t..." ++ (show $ showStampedSummary message)
   broadcast clients $ serialize message
 
 -- Send a message to a single client
 sendMessage :: WS.TextProtocol p => Client p -> NetworkMessage -> IO ()
 sendMessage client message = do
   name <- clientNameIO $ client
-  (putStrLn $ "Send message to client " 
+  (putStrLn $ show ("Send message to client " 
     `append` name  
     `append` " (" 
     `append` (clientHost client)
     `append` "...\n\t..."
-    `append` showSummary message)  
+    `append` showSummary message))  
   >> (send client $ serialize message)
 
 broadcast :: WS.TextProtocol p => Clients p -> Text -> IO ()
@@ -63,7 +63,7 @@ broadcast clients datum = do
 
 send :: WS.TextProtocol p => Client p -> Text -> IO ()
 send client datum = do
-  liftIO $ putStrLn datum
+  liftIO $ putStrLn $ show datum
   WS.sendSink (clientSink client) $ WS.textData datum
   return ()
 
