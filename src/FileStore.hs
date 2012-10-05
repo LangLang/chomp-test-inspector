@@ -93,7 +93,7 @@ updateFileContentSTM fs f cacheEntry =
     Right cacheEntry' -> storeCacheEntrySTM fs f cacheEntry'
 -}
 
--- Apply remaining operations to the file store and mark the entry as not dirty 
+-- Apply remaining operations to the file store 
 updateFileContentsIO :: FileStore -> FilePath -> FileCacheEntry -> IO (Either String FileCacheEntry)
 updateFileContentsIO fs f cacheEntry =
   let

@@ -66,37 +66,44 @@ loadFileModifications messages fileStore path = do
         return () 
       Just (Left cacheEntry) -> do -- (closed counter was == 0)
                                    -- Open the file using a write a lock and test if it has been modified
-        do
-          (h, storedContents) <- loadWriteLocked relPath path
-          let cachedContents  = FS.cacheEntryContents cacheEntry
-              actions         = generateActions cachedContents storedContents 
-              op              = OT.TextOperation actions 
-          if length actions == 0 || (case actions of [OT.Retain _] -> False ; _ -> True) 
-            then putStrLn $ "No changes detected in the contents of the modified file, '" ++ path ++ "'." 
-            else
-              let eitherCacheEntry' = FS.mergeAtContentsRevision cacheEntry op
-              in case eitherCacheEntry' of
-                Left err -> T.putStrLn $ T.pack err
-                Right cacheEntry' -> do
-                    eitherCacheEntry'' <- FS.updateFileContentsIO fileStore path $ incClosedCounter cacheEntry'            
-                    case eitherCacheEntry'' of
-                      Left err -> T.putStrLn $ T.pack err
-                      Right cacheEntry'' -> let
-                        contents'                     = FS.cacheEntryContents cacheEntry''
-                        ops'                          = FS.operations $ FS.cacheEntryInfo cacheEntry'' 
-                        (OT.TextOperation actions'):_ = ops'
-                        opId                          = "n/a" -- It is not necessary to generate a random id for server-generated operations
-                                                              -- (because they do not require acknowledgement)
-                        in do
-                          if (contents' /= storedContents) 
-                            then do
-                              putStr $ "\t...Writing changes to '" ++ path ++ "'" 
-                              writeToDisk h contents'
-                              putStrLn " (Done)"
-                            else
-                              putStrLn $ "\t...No changes to write to '" ++ path ++ "'"
-                          enqueue $ ServerOperationalTransform path (fromIntegral $ length ops' - 1) actions' opId
-          IO.hClose h
+        (h, storedContents) <- loadWriteLocked relPath path
+        let cachedContents  = FS.cacheEntryContents cacheEntry
+            actions         = generateActions cachedContents storedContents 
+            op              = OT.TextOperation actions 
+        cacheEntry''' <- if length actions == 0 || (case actions of [OT.Retain _] -> False ; _ -> True) 
+          then do 
+            putStrLn $ "No changes detected in the contents of the modified file, '" ++ path ++ "'."
+            return cacheEntry 
+          else
+            let eitherCacheEntry' = FS.mergeAtContentsRevision cacheEntry op
+            in case eitherCacheEntry' of
+              Left err -> do
+                T.putStrLn $ T.pack err
+                return cacheEntry
+              Right cacheEntry' -> do
+                eitherCacheEntry'' <- FS.updateFileContentsIO fileStore path cacheEntry'            
+                case eitherCacheEntry'' of
+                  Left err -> do
+                    T.putStrLn $ T.pack err
+                    return cacheEntry'
+                  Right cacheEntry'' -> let
+                    contents'                     = FS.cacheEntryContents cacheEntry''
+                    ops'                          = FS.operations $ FS.cacheEntryInfo cacheEntry'' 
+                    (OT.TextOperation actions'):_ = ops'
+                    opId                          = "n/a" -- It is not necessary to generate a random id for server-generated operations
+                                                          -- (because they do not require acknowledgement)
+                    in do
+                      if (contents' /= storedContents) 
+                        then do
+                          putStr $ "\t...Writing changes to '" ++ path ++ "'" 
+                          writeToDisk h contents'
+                          putStrLn " (Done)"
+                        else
+                          putStrLn $ "\t...No changes to write to '" ++ path ++ "'"
+                      enqueue $ ServerOperationalTransform path (fromIntegral $ length ops' - 1) actions' opId
+                      return cacheEntry''
+        _ <- FS.storeCacheEntryIO fileStore path $ incClosedCounter cacheEntry'''
+        IO.hClose h
   >> return ()
   where
     enqueue = STM.Messages.enqueue messages <=< stampServerMessage
