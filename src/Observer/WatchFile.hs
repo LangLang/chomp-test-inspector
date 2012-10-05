@@ -70,10 +70,10 @@ loadFileModifications messages fileStore path = do
         let cachedContents  = FS.cacheEntryContents cacheEntry
             actions         = generateActions cachedContents storedContents 
             op              = OT.TextOperation actions 
-        cacheEntry''' <- if length actions == 0 || (case actions of [OT.Retain _] -> False ; _ -> True) 
+        cacheEntry''' <- if length actions == 0 || (case actions of [OT.Retain _] -> True ; _ -> False) 
           then do 
             putStrLn $ "No changes detected in the contents of the modified file, '" ++ path ++ "'."
-            return cacheEntry 
+            return cacheEntry
           else
             let eitherCacheEntry' = FS.mergeAtContentsRevision cacheEntry op
             in case eitherCacheEntry' of
@@ -98,10 +98,11 @@ loadFileModifications messages fileStore path = do
                           putStr $ "\t...Writing changes to '" ++ path ++ "'" 
                           writeToDisk h contents'
                           putStrLn " (Done)"
-                        else
+                          enqueue $ ServerOperationalTransform path (fromIntegral $ length ops') actions' opId
+                          return cacheEntry''
+                        else do
                           putStrLn $ "\t...No changes to write to '" ++ path ++ "'"
-                      enqueue $ ServerOperationalTransform path (fromIntegral $ length ops' - 1) actions' opId
-                      return cacheEntry''
+                          return cacheEntry'
         _ <- FS.storeCacheEntryIO fileStore path $ incClosedCounter cacheEntry'''
         IO.hClose h
   >> return ()
