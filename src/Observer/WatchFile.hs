@@ -79,13 +79,17 @@ loadFileModifications messages fileStore path = do
             let eitherCacheEntry' = FS.mergeAtContentsRevision cacheEntry op
             in case eitherCacheEntry' of
               Left err -> do
-                putStrLn err
+                putStrLn $ "Merge failed: " ++ err ++ " >>>"
+                putStrLn $ "\t>>> cache entry info: " ++ show (FS.cacheEntryInfo cacheEntry)
+                putStrLn $ "\t>>> cache entry contents: " ++ show (FS.cacheEntryContents cacheEntry)
                 return cacheEntry
               Right cacheEntry' -> do
                 eitherCacheEntry'' <- FS.updateFileContentsIO fileStore path cacheEntry'
                 case eitherCacheEntry'' of
                   Left err -> do
-                    putStrLn err
+                    putStrLn $ "Update file contents failed: " ++ err ++ " >>>"
+                    putStrLn $ "\t>>> cache entry info: " ++ show (FS.cacheEntryInfo cacheEntry')
+                    putStrLn $ "\t>>> cache entry contents: " ++ show (FS.cacheEntryContents cacheEntry')
                     return cacheEntry'
                   Right cacheEntry'' -> let
                     contents'                     = FS.cacheEntryContents cacheEntry''
