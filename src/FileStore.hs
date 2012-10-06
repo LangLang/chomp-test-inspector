@@ -9,15 +9,15 @@ module FileStore (
   FileCacheEntry,
   opsRevision,
   mergeAtContentsRevision,
-  updateFileContentsIO,
-  applyOperationToCache -- remove?
+  updateFileContentsIO
+  --applyOperationToCache -- remove?
 ) where
 
 -- Standard modules
 import Data.Text (Text)
-import Control.Monad
-import Control.Monad.Trans.Maybe
-import Control.Concurrent.STM (STM)
+--import Control.Monad
+--import Control.Monad.Trans.Maybe
+--import Control.Concurrent.STM (STM)
 
 -- Supporting modules
 -- https://github.com/timjb/haskell-operational-transformation
@@ -122,7 +122,7 @@ applyOperationalTransform cacheEntry (rev, actions) =
     Right ((OT.TextOperation actions'), OT.ServerState revision' doc' ops') ->
       Right $ (actions', STM.FileCacheEntry (FileInfo { revision = revision', operations = ops' }) doc')
 -}
-
+{-
 applyOperationToCache :: FileCacheEntry -> (OT.Revision, OT.TextOperation) -> Either String FileCacheEntry
 applyOperationToCache cacheEntry (rev,op) =
   let
@@ -132,7 +132,7 @@ applyOperationToCache cacheEntry (rev,op) =
   do 
     ops' <- otResult
     return $ (STM.FileCacheEntry (fileInfo { operations = ops' }) (cacheEntryContents cacheEntry))
-
+-}
 -- The write operation is application specific because it needs to test the dirty flag to determine whether it may proceed
 -- and applies the operational transform only once the file been properly locked (and the dirty flag was determined to be false)
 -- This function will also wait a second after locking the file, just to make sure that the WatchDirectory 

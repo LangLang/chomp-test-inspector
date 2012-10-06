@@ -1,4 +1,4 @@
-module Observer.WatchFile (loadFileContents, loadFilesContents, loadFileModifications {-, applyOperation-}) where
+module Observer.WatchFile (loadFileContents, loadFilesContents, loadFileModifications, mergeOperation) where
 
 -- Standard modules
 import qualified Data.Text as T
@@ -14,11 +14,11 @@ import qualified System.IO as IO
 -- Supporting modules
 -- https://github.com/timjb/haskell-operational-transformation
 import qualified Control.OperationalTransformation.Text as OT
--- import qualified Control.OperationalTransformation.Server as OT
 
 -- Application modules
 import IOUtil
 import Message
+import qualified OTServer as OT
 import qualified FileStore as FS
 import FileStore (FileStore)
 import qualified STM.FileStore as STM.FS
@@ -82,14 +82,15 @@ loadFileModifications messages fileStore path = do
                 putStrLn err
                 return cacheEntry
               Right cacheEntry' -> do
-                eitherCacheEntry'' <- FS.updateFileContentsIO fileStore path cacheEntry'            
+                eitherCacheEntry'' <- FS.updateFileContentsIO fileStore path cacheEntry'
                 case eitherCacheEntry'' of
                   Left err -> do
                     putStrLn err
                     return cacheEntry'
                   Right cacheEntry'' -> let
                     contents'                     = FS.cacheEntryContents cacheEntry''
-                    ops'                          = FS.operations $ FS.cacheEntryInfo cacheEntry'' 
+                    fi'                           = FS.cacheEntryInfo cacheEntry''
+                    ops'                          = FS.operations fi'  
                     (OT.TextOperation actions'):_ = ops'
                     opId                          = "n/a" -- It is not necessary to generate a random id for server-generated operations
                                                           -- (because they do not require acknowledgement)
@@ -107,7 +108,7 @@ loadFileModifications messages fileStore path = do
                           putStrLn $ "\t...No changes to write to '" ++ path ++ "'"
                           --return cacheEntry'
                       --if (case actions' of [Retain _] -> False ; _ -> True) 
-                      enqueue $ ServerOperationalTransform path (fromIntegral $ length ops' - 1) actions' opId
+                      enqueue $ ServerOperationalTransform path (FS.opsRevision fi' - 1) actions' opId
                       return cacheEntry''
         _ <- FS.storeCacheEntryIO fileStore path $ incClosedCounter cacheEntry'''
         IO.hClose h
@@ -162,24 +163,33 @@ loadFileModifications messages fileStore path = do
       T.hPutStr h text
       IO.hSetFileSize h =<< IO.hTell h 
 
-{-
--- Apply operational transform to a file
-applyOperation :: FileStore -> FilePath -> OT.Revision -> [OT.Action] -> OperationId -> IO (Either String ServerMessage) 
-applyOperation fileStore path revision actions opId = do
+-- Merge an operational transform into a file's list of operational transforms to be applied
+mergeOperation :: FileStore -> FilePath -> OT.Revision -> [OT.Action] -> OperationId -> IO (Either String ServerMessage)
+mergeOperation fileStore path revision actions opId = do
   maybeFileEntry <- FS.readFileStoreEntryIO fileStore path
   case maybeFileEntry of
-    Nothing -> 
-      -- TODO: Implement a more sophisticated solution for this case 
+    Nothing        -> 
+      -- TODO: Implement a more sophisticated solution for this case (add a placeholder into the filestore) 
       return $ Left $ "The file `" ++ path ++ "` could not be located in the file store." 
     Just fileEntry -> do
       maybeCacheEntry <- FS.fileEntryCacheIO fileEntry
       case maybeCacheEntry of
-        Nothing -> 
-          -- TODO: Implement a more sophisticated solution for this case 
+        Nothing         -> 
+          -- TODO: Implement a more sophisticated solution for this case (add a placeholder into the filestore) 
           return $ Left $ "The file `" ++ path ++ "`'s contents has not been loaded into the file store."
         Just cacheEntry -> 
-          apply fileStore path cacheEntry revision actions opId
-      
+          --apply fileStore path cacheEntry revision actions opId
+          let fi = FS.cacheEntryInfo cacheEntry in
+          case OT.mergeAtRevision (FS.operations fi) revision (OT.TextOperation actions) of
+            Left err   -> return $ Left err
+            Right ops' ->
+              let (OT.TextOperation actions'):_ = ops' 
+                  fi' = fi {FS.operations = ops'}
+              in
+                FS.storeCacheIO fileStore path fi' (FS.cacheEntryContents cacheEntry)
+                >> (return $ Right $ ServerOperationalTransform path (FS.opsRevision fi' - 1) actions' opId)
+
+{-
 -- Apply OT actions to the file store's cache
 apply :: FileStore -> FilePath -> FS.FileCacheEntry -> OT.Revision -> [OT.Action] -> OperationId -> IO (Either String ServerMessage)  
 apply fileStore path cacheEntry revision actions opId = 

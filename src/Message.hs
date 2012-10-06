@@ -31,11 +31,11 @@ import qualified Text.Read as Read
 -- Supporting modules
 -- https://github.com/timjb/haskell-operational-transformation
 import qualified Control.OperationalTransformation.Text as OT
-import qualified Control.OperationalTransformation.Server as OT (Revision)
 
 -- Application modules
 import FileStore
 import Client (HostId, serverId)
+import qualified OTServer as OT (Revision)
 
 type OperationId = String
 
