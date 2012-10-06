@@ -107,7 +107,7 @@ loadFileModifications messages fileStore path = do
                           putStrLn $ "\t...No changes to write to '" ++ path ++ "'"
                           --return cacheEntry'
                       --if (case actions' of [Retain _] -> False ; _ -> True) 
-                      enqueue $ ServerOperationalTransform path (fromIntegral $ length ops') actions' opId
+                      enqueue $ ServerOperationalTransform path (fromIntegral $ length ops' - 1) actions' opId
                       return cacheEntry''
         _ <- FS.storeCacheEntryIO fileStore path $ incClosedCounter cacheEntry'''
         IO.hClose h
