@@ -213,5 +213,11 @@ loadWriteLocked relPath path = do
     -- (which causes the write lock to be lost) 
     hGetContentsOpen :: IO.Handle -> IO T.Text
     hGetContentsOpen h = do
-      foldUntilIO T.append T.empty (IO.hIsEOF h) (T.hGetLine h)  
+      -- Read the first line (to prevent a newline being added before the first line)
+      firstLine <- T.hGetLine h
+      isEOF <- IO.hIsEOF h
+      -- Read all remaining lines in the file
+      if (not isEOF)
+        then foldUntilIO (T.append . (`T.snoc` '\n')) firstLine (IO.hIsEOF h) (T.hGetLine h)
+        else return firstLine
 
