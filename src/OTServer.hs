@@ -17,8 +17,8 @@ type Revision = Integer
 
 -- Compose an operation with a sequence of preceding operations
 -- This function expects the list of preceding operations to be passed to it in reverse order  
-merge :: OTOperation op => [op] -> op -> Either String [op]
-merge ops op = liftM (:ops) (foldM transformFst op (reverse ops))
+merge :: OTOperation op => [op] -> op -> Either String op
+merge ops op = foldM transformFst op $ reverse ops
   where
     transformFst :: OTOperation op => op -> op -> Either String op 
     transformFst a b = fst <$> transform a b
@@ -30,7 +30,8 @@ mergeAtRevision ops opRev op = do
   concurrentOps <- if opRev > fromIntegral (length ops)
     then Left $ "unknown revision number " ++ show opRev 
     else Right $ take (length ops - fromInteger opRev) ops
-  merge concurrentOps op
+  merge concurrentOps op 
+  >>= return . (:ops) 
 
 ---- Apply a sequence of operations to a document starting at the given revision number  
 applyAtRevision :: OTSystem doc op => [op] -> Revision -> doc -> Either String doc 
