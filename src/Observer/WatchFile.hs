@@ -17,6 +17,7 @@ import qualified Control.OperationalTransformation.Text as OT
 -- import qualified Control.OperationalTransformation.Server as OT
 
 -- Application modules
+import IOUtil
 import Message
 import qualified FileStore as FS
 import FileStore (FileStore)
@@ -78,13 +79,13 @@ loadFileModifications messages fileStore path = do
             let eitherCacheEntry' = FS.mergeAtContentsRevision cacheEntry op
             in case eitherCacheEntry' of
               Left err -> do
-                T.putStrLn $ T.pack err
+                putStrLn err
                 return cacheEntry
               Right cacheEntry' -> do
                 eitherCacheEntry'' <- FS.updateFileContentsIO fileStore path cacheEntry'            
                 case eitherCacheEntry'' of
                   Left err -> do
-                    T.putStrLn $ T.pack err
+                    putStrLn err
                     return cacheEntry'
                   Right cacheEntry'' -> let
                     contents'                     = FS.cacheEntryContents cacheEntry''
@@ -93,16 +94,21 @@ loadFileModifications messages fileStore path = do
                     opId                          = "n/a" -- It is not necessary to generate a random id for server-generated operations
                                                           -- (because they do not require acknowledgement)
                     in do
-                      if (contents' /= storedContents) 
+                      -- Test if the file stored on disk already corresponds to the newly cached contents 
+                      _ <- if (contents' /= storedContents) 
                         then do
-                          putStr $ "\t...Writing changes to '" ++ path ++ "'" 
+                          putStr $ "\t...Writing changes to '" ++ path ++ "'"
+                          -- TODO: putStrLn hIsOpen ? 
                           writeToDisk h contents'
                           putStrLn " (Done)"
-                          enqueue $ ServerOperationalTransform path (fromIntegral $ length ops') actions' opId
-                          return cacheEntry''
+                          --enqueue $ ServerOperationalTransform path (fromIntegral $ length ops') actions' opId
+                          --return cacheEntry''
                         else do
                           putStrLn $ "\t...No changes to write to '" ++ path ++ "'"
-                          return cacheEntry'
+                          --return cacheEntry'
+                      --if (case actions' of [Retain _] -> False ; _ -> True) 
+                      enqueue $ ServerOperationalTransform path (fromIntegral $ length ops') actions' opId
+                      return cacheEntry''
         _ <- FS.storeCacheEntryIO fileStore path $ incClosedCounter cacheEntry'''
         IO.hClose h
   >> return ()
@@ -199,6 +205,13 @@ load relPath path = do
 loadWriteLocked :: FilePath -> FilePath -> IO (IO.Handle, T.Text)
 loadWriteLocked relPath path = do
   h <- IO.openFile relPath IO.ReadWriteMode
-  contents <- T.hGetContents h
+  contents <- hGetContentsOpen h
   putStrLn $ "\t...File loaded " ++ path ++ " (with write lock)"
   return (h, contents)
+  where 
+    -- We cannot use hGetContents directly, because hGetContents automatically closes the handle 
+    -- (which causes the write lock to be lost) 
+    hGetContentsOpen :: IO.Handle -> IO T.Text
+    hGetContentsOpen h = do
+      foldUntilIO T.append T.empty (IO.hIsEOF h) (T.hGetLine h)  
+
