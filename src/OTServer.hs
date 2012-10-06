@@ -6,7 +6,7 @@ module OTServer (Revision, merge, mergeAtRevision, applyAtRevision) where
 
 -- Standard modules
 --import Data.Text (Text)
-import Control.Monad (foldM, liftM)
+import Control.Monad
 import Data.Functor ((<$>))
 
 -- Supporting modules
@@ -33,10 +33,10 @@ mergeAtRevision ops opRev op = do
   merge concurrentOps op 
   >>= return . (:ops) 
 
----- Apply a sequence of operations to a document starting at the given revision number  
+-- Apply a sequence of operations to a document starting at the given revision number  
 applyAtRevision :: OTSystem doc op => [op] -> Revision -> doc -> Either String doc 
 applyAtRevision ops docRev doc = do
   unappliedOps <- if docRev > fromIntegral (length ops)
     then Left $ "unknown revision number " ++ show docRev 
     else Right $ take (length ops - fromInteger docRev) ops
-  foldM (flip apply) doc unappliedOps
+  foldM (flip apply) doc $ reverse unappliedOps
