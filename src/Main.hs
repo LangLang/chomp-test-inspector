@@ -9,6 +9,7 @@ import qualified System.Exit
 import qualified System.Directory
 
 -- Application modules
+import IOUtil
 import WebApp
 import WebsocketApp
 import qualified FileStore
@@ -100,17 +101,9 @@ loopDispatch serverStateT clients fileStore serverMessages clientMessages maybeE
 -- Yield to other threads until the server state is terminated 
 waitUntilTerminated :: TVar ServerState -> IO ()
 waitUntilTerminated serverStateT =
-  foreverUntilIO yield $ do
+  (flip foreverUntilIO) yield $ do
     state <- readTVarIO serverStateT
-    return $ state == Terminated 
-
--- Repeat an IO action until another IO operation returns true 
-foreverUntilIO :: IO () -> IO Bool -> IO ()
-foreverUntilIO loop check = do
-  cond <- loop >> check
-  if cond
-    then return ()
-    else foreverUntilIO loop check
+    return $ state == Terminated
 
 -- Set up the web application (front controller) with the websocket application (front controller)
 -- and shared resources (the file store and incoming message queues)

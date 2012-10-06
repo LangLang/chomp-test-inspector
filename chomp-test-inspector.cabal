@@ -48,7 +48,7 @@ executable chomp-test-inspector
                  Observer.WatchDirectory Observer.WatchFile
                  Observer.WatchExecutable OTServer MessageDispatch 
                  ServerState STM.Clients Handler.ServerHandler
-                 Handler.ClientHandler Client
+                 Handler.ClientHandler Client IOUtil
   ghc-prof-options:
   ghc-shared-options:
   hugs-options:
