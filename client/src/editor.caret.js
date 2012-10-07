@@ -56,29 +56,6 @@
         }
         // Offset is past the end of the text content
         return getFocusPointAtOffset(rootNode.lastChild, offset);
-      },
-      getFocusInSelection = function(selection, node) {
-          var 
-            text = getTextContent(selection.focusNode),
-            focusOffset = selection.focusOffset,
-            i;
-          /* Count the number of newlines before the caret offset inside this node
-          console.log("FOCUS NODE", selection.focusNode, selection.focusOffset);
-          for (i = 0; i < focusOffset; ++i) {
-            if (text[i] === '\n') {
-              console.log("NEWLINE");
-              ++focusOffset;
-            }
-          }
-          if (focusOffset == 0) {
-            // Google-chrome inserts divs in order to create new-lines... so in
-            // the case that we're inside a div, add one to the focus offset
-            console.log(selection.focusNode.parentNode.parentNode.parentNode);
-            //for (var j = 0; j < selection.focusNode.parentNode.parentNode.parentNode.parentNode.children.length; ++j)
-            //  console.log(selection.focusNode.parentNode.parentNode.parentNode.parentNode.children[j]);
-          }
-          console.log("        --offset: ", focusOffset);*/
-          return focusOffset;
       };
     
     Editor.getCaretOffset = function(domElement) {
@@ -88,10 +65,10 @@
       if (!selection.containsNode(domElement, true)) 
         return null;
       if (selection.focusNode === domElement)
-        return getFocusInSelection(selection);
+        return selection.focusOffset;
       if (selection.focusNode == null)
         return null;
-      return getParentNodeOffset(domElement, selection.focusNode) + getFocusInSelection(selection);
+      return getParentNodeOffset(domElement, selection.focusNode) + selection.focusOffset;
     };
 
     Editor.setCaretOffset = function(domElement, offset) {
@@ -108,5 +85,26 @@
       range.setStart(focusPoint[0], focusPoint[1]);
       range.setEnd(focusPoint[0], focusPoint[1]);
       selection.addRange(range);
+    };
+
+    Editor.getCaretSelection = function(domElement) {
+      var 
+        focusOffset = Editor.getCaretOffset(domElement),
+        selection;
+      if (focusOffset == null)
+        return [null, null];
+      if (!window.getSelection)
+        return [null, focusOffset];
+      selection = window.getSelection();
+      if (!selection.containsNode(domElement, true)) 
+        return [null, focusOffset];
+      if (selection.anchorNode === domElement)
+        return [selection.anchorOffset, focusOffset];
+      if (selection.anchorNode == null)
+        return [null, focusOffset];
+      return [
+        getParentNodeOffset(domElement, selection.anchorNode) + selection.anchorOffset,
+        focusOffset
+      ];
     };
   })();

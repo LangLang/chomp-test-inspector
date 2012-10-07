@@ -12,9 +12,10 @@
           $editor = $editorInput.parent().parent(),
           filename = $editor.attr("data-filename"),
           isResult = $editorInput.hasClass("editor-result"),
-          caretOffset,
+          caretSelection,
           otClient,
-          otOperations;
+          otOperations,
+          remainingCharacters;
 
         // Ignore non-printable characters
         if (charCode == 0)
@@ -29,16 +30,25 @@
         // TODO: Handle the case where there's already a selection (to be replaced) in the editor
 
         // Generate an operation for due changes to the buffer
-        caretOffset = Editor.getCaretOffset(e.target);
-        if (caretOffset == null) {
-          console.error("Could not determine the caret offset during a keypress event.");
+        caretSelection = Editor.getCaretSelection(e.target);
+        if (caretSelection[1] == null) {
+          console.error("Could not determine the caret position during a keypress event.");
           return;
         }
 
         otClient = Editor.getOTClient(filename);
         otOperations = otClient.createOperation();
-        otOperations.retain(caretOffset);
+        otOperations.retain(caretSelection[1]);
 
+        remainingCharacters = textContent.length - caretSelection[1];
+        if (caretSelection[0] != null) {
+          if (caretSelection[0] > caretSelection[1]) {
+            otOperations.delete(caretSelection[0] - caretSelection[1]);
+            remainingCharacters -= caretSelection[0] - caretSelection[1];
+          } else if (caretSelection[0] < caretSelection[1]) {
+            otOperations.backspace(caretSelection[1] - caretSelection[0]);
+          }
+        }
         switch (charCode) {
           case 13: // Return key '\r'
             otOperations.insert('\n');
@@ -46,7 +56,7 @@
           default:
             otOperations.insert(String.fromCharCode(charCode));
         }
-        otOperations.retain(textContent.length - caretOffset);
+        otOperations.retain(remainingCharacters);
 
         // Apply operations to the client
         otClient.applyClient(otOperations);
@@ -64,10 +74,11 @@
           $editor = $editorInput.parent().parent(),
           filename = $editor.attr("data-filename"),
           isResult = $editorInput.hasClass("editor-result"),
-          caretOffset,
+          caretSelection,
           otClient,
           otOperations,
-          remainingCharacters;
+          remainingCharacters,
+          delta;
         // Test whether DOM element contains a filename attribute (and add ".output" for result files)
         if (filename == null)
           console.error("No filename attribute found for editor.")
@@ -90,18 +101,18 @@
         // TODO: Handle the case where there's already a selection (to be replaced) in the editor
 
         // Generate an operation for changes to the buffer (since before this key event)
-        caretOffset = Editor.getCaretOffset(e.target);
-        if (caretOffset == null) {
-          console.error("Could not determine the caret offset during a keyup event.");
+        caretSelection = Editor.getCaretSelection(e.target);
+        if (caretSelection[1] == null) {
+          console.error("Could not determine the caret position during a keyup event.");
           return;
         }
 
         switch (keyCode) {
           case 8: // Backspace
-            if (caretOffset == 0) return;
+            if (caretSelection[1] == 0) return;
           //case 45: // Insert
           case 46: // Delete
-            if (caretOffset == textContent.length) return;
+            if (caretSelection[1] == textContent.length) return;
           //case 86: // V (ctrl+v = paste)
           //case 88: // V (ctrl+x = cut)
             break;
@@ -112,21 +123,33 @@
 
         otClient = Editor.getOTClient(filename);
         otOperations = otClient.createOperation();
-        otOperations.retain(caretOffset);
-        remainingCharacters = textContent.length - caretOffset;
+        otOperations.retain(caretSelection[1]);
+        remainingCharacters = textContent.length - caretSelection[1];
 
+        delta = 0;
         switch (keyCode) {
           case 8: // Backspace
-            otOperations.backspace(1);
+            if (caretSelection[0] == null || caretSelection[0] == caretSelection[1])
+              delta = -1;
+            else
+              delta = caretSelection[0] - caretSelection[1];
             break;
           //case 45: // Insert
           case 46: // Delete
-            otOperations.delete(1);
-            remainingCharacters -= 1;
+            if (caretSelection[0] == null || caretSelection[0] == caretSelection[1])
+              delta = 1;
+            else
+              delta = caretSelection[0] - caretSelection[1];
             break;
           //case 86: // V (ctrl+v = paste)
           //case 88: // V (ctrl+x = cut)
-        };
+        }
+        if (delta > 0) {
+          otOperations.delete(delta);
+          remainingCharacters -= delta;
+        } else if (delta < 0) {
+          otOperations.backspace(-delta);
+        }
         otOperations.retain(remainingCharacters);
 
         // Apply operations to the client
