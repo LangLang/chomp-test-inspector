@@ -106,12 +106,8 @@ loadFileModifications messages fileStore path = do
                           -- TODO: putStrLn hIsOpen ? 
                           writeToDisk h contents'
                           putStrLn " (Done)"
-                          --enqueue $ ServerOperationalTransform path (fromIntegral $ length ops') actions' opId
-                          --return cacheEntry''
                         else do
                           putStrLn $ "\t...No changes to write to '" ++ path ++ "'"
-                          --return cacheEntry'
-                      --if (case actions' of [Retain _] -> False ; _ -> True) 
                       enqueue $ ServerOperationalTransform path (FS.opsRevision fi' - 1) actions' opId
                       return cacheEntry''
         _ <- FS.storeCacheEntryIO fileStore path $ incClosedCounter cacheEntry'''
@@ -192,21 +188,6 @@ mergeOperation fileStore path revision actions opId = do
               in
                 FS.storeCacheIO fileStore path fi' (FS.cacheEntryContents cacheEntry)
                 >> (return $ Right $ ServerOperationalTransform path (FS.opsRevision fi' - 1) actions' opId)
-
-{-
--- Apply OT actions to the file store's cache
-apply :: FileStore -> FilePath -> FS.FileCacheEntry -> OT.Revision -> [OT.Action] -> OperationId -> IO (Either String ServerMessage)  
-apply fileStore path cacheEntry revision actions opId = 
-  case FS.applyOperationalTransform cacheEntry (revision, actions) of
-    Left errorMessage -> return $ Left $ "Operational transform failed: " ++ show errorMessage
-    Right (actions', cacheEntry') ->
-      -- Store updated state in the file store
-      let fileInfo' = FS.cacheEntryInfo cacheEntry'
-          fileContents' = FS.cacheEntryContents cacheEntry' in
-      (FS.storeCacheIO fileStore path cacheEntry)
-        -- Add the operational transform to the message queue (to be broadcast to the clients)
-      >> (return $ Right $ ServerOperationalTransform path (FS.revision fileInfo' - 1) actions' opId)
--}
 
 -- Reads the file contents 
 load :: FilePath -> FilePath -> IO T.Text
