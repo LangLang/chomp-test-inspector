@@ -52,13 +52,13 @@
           d += dd;
         }
         else if (lastOp.insert) {
-          if (lastOp.insert <= remaining) {
-            dd = lastOp.insert;
-            remaining -= lastOp.insert;
+          if (lastOp.insert.length <= remaining) {
+            dd = lastOp.insert.length;
+            remaining -= lastOp.insert.length;
             this.ops.pop();
           }
           else {
-            lastOp.insert -= remaining;
+            lastOp.insert.slice(0,-remaining);
             dd = remaining;
             remaining = 0;
           }
