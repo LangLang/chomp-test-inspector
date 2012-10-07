@@ -17,6 +17,7 @@ import System.FilePath ((</>))
 import Message
 import qualified STM.Messages
 import qualified STM.Messages as STM (ServerMessages)
+import IOUtil (foreverWhileIO)
 
 -- Types
 type WatchExecutableHandle = INotify
@@ -102,14 +103,6 @@ run serverMessages execPath rootPath path = do
 -- Run the executable on a list of file paths
 runEach :: STM.ServerMessages -> FilePath -> FilePath -> [FilePath] -> IO ()
 runEach serverMessages execPath rootPath paths = mapM_ (run serverMessages execPath rootPath) paths
-
--- Repeat an IO action every time an IO operation returns true until it doesn't 
-foreverWhileIO :: IO Bool -> IO () -> IO ()
-foreverWhileIO check loop = do
-  cond <- check
-  if cond
-    then loop >> (foreverWhileIO check loop)
-    else return ()
 
 readProcessStreams :: STM.ServerMessages -> P.ProcessHandle -> FilePath -> System.IO.Handle -> System.IO.Handle -> IO ()
 readProcessStreams serverMessages hProcess outputPath hStdOut hStdErr = do

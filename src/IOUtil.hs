@@ -1,4 +1,4 @@
-module IOUtil (foreverUntilIO, foldUntilIO) where
+module IOUtil (foreverUntilIO, foldUntilIO, foreverWhileIO) where
 
 -- Repeat an IO action until another IO operation returns true 
 foreverUntilIO :: IO Bool -> IO () -> IO ()
@@ -17,3 +17,11 @@ foldUntilIO f a testIO loopIO = do
   if cond
     then return a'
     else foldUntilIO f a' testIO loopIO
+
+-- Repeat an IO action every time an IO operation returns true until it doesn't 
+foreverWhileIO :: IO Bool -> IO () -> IO ()
+foreverWhileIO check loop = do
+  cond <- check
+  if cond
+    then loop >> (foreverWhileIO check loop)
+    else return ()
