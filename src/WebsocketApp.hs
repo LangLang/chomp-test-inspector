@@ -81,7 +81,8 @@ websocketApp appState waiReq wsReq = do
         STM.clientName = newClientName,
         STM.clientSink = newClientSink
       }
-    (atomically $ TList.append (appClients appState) c) >> return c 
+    clientsEnd <- atomically $ TList.end $ appClients appState
+    (atomically $ TList.append clientsEnd c) >> return c 
   
   -- Listen to incoming messages, adding them to a incomming client message queue
   -- TODO: listen should happen in a loop (probably forkIO'd and given the sink generated above)
@@ -103,9 +104,11 @@ websocketApp appState waiReq wsReq = do
     sendLoadFileContents file maybeCacheEntry =
       sendMessage <=< (liftIO . stampServerMessage) $ case maybeCacheEntry of
         Nothing -> UnloadFileContents file
-        Just cacheEntry -> LoadFileContents file 
-          (FS.opsRevision $ FS.cacheEntryInfo cacheEntry)
-          (FS.cacheEntryContents cacheEntry)
+        Just cacheEntry ->
+          case FS.readPendingFileContents cacheEntry of
+            Left _ -> UnloadFileContents file -- TODO: Error applying pending operations  
+            Right fc -> LoadFileContents file (FS.opsRevision $ FS.cacheEntryInfo cacheEntry) fc
+          
 
 sendMessage :: TextProtocol p => StampedNetworkMessage -> WebSockets p () 
 sendMessage message = do
