@@ -15,7 +15,9 @@
           caretSelection,
           otClient,
           otOperations,
-          remainingCharacters;
+          remainingCharacters,
+          deltaString,
+          deltaDelete;
 
         // Ignore non-printable characters
         if (charCode == 0)
@@ -40,23 +42,34 @@
         otOperations = otClient.createOperation();
         otOperations.retain(caretSelection[1]);
 
-        remainingCharacters = textContent.length - caretSelection[1];
-        if (caretSelection[0] != null) {
-          if (caretSelection[0] > caretSelection[1]) {
-            otOperations.delete(caretSelection[0] - caretSelection[1]);
-            remainingCharacters -= caretSelection[0] - caretSelection[1];
-          } else if (caretSelection[0] < caretSelection[1]) {
-            otOperations.backspace(caretSelection[1] - caretSelection[0]);
-          }
-        }
+        // Calculate the deltas to apply
         switch (charCode) {
           case 13: // Return key '\r'
-            otOperations.insert('\n');
+            deltaString = '\n';
             break;
           default:
-            otOperations.insert(String.fromCharCode(charCode));
+            deltaString = String.fromCharCode(charCode);
         }
-        otOperations.retain(remainingCharacters);
+        deltaDelete = 0;
+        if (caretSelection[0] != null);
+          deltaDelete = caretSelection[0] - caretSelection[1];
+
+        // Apply the deltas 
+        // (Insert before if the caret is at the end, or after if the caret is at the start of the selection)
+        remainingCharacters = textContent.length - caretSelection[1];
+        if (deltaDelete > 0) {
+          if (deltaString.length > 0)
+            otOperations.insert(deltaString);
+          otOperations.delete(deltaDelete);
+          remainingCharacters -= deltaDelete;
+        } else { 
+          if (deltaDelete < 0)
+            otOperations.backspace(-deltaDelete);
+          if (deltaString.length > 0)
+            otOperations.insert(deltaString);
+        }
+        if (remainingCharacters > 0)
+          otOperations.retain(remainingCharacters);
 
         // Apply operations to the client
         otClient.applyClient(otOperations);
@@ -150,7 +163,8 @@
         } else if (delta < 0) {
           otOperations.backspace(-delta);
         }
-        otOperations.retain(remainingCharacters);
+        if (remainingCharacters > 0)
+          otOperations.retain(remainingCharacters);
 
         // Apply operations to the client
         otClient.applyClient(otOperations);
